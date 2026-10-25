@@ -44,6 +44,18 @@ def init_db():
     );
     """)
 
+    # Ensure local development columns exist
+    cursor.execute("PRAGMA table_info(repositories);")
+    existing_cols = [c[1] for c in cursor.fetchall()]
+    if "is_local" not in existing_cols:
+        cursor.execute("ALTER TABLE repositories ADD COLUMN is_local INTEGER DEFAULT 0;")
+    if "local_path" not in existing_cols:
+        cursor.execute("ALTER TABLE repositories ADD COLUMN local_path TEXT;")
+    if "active_branch" not in existing_cols:
+        cursor.execute("ALTER TABLE repositories ADD COLUMN active_branch TEXT;")
+    if "commit_count" not in existing_cols:
+        cursor.execute("ALTER TABLE repositories ADD COLUMN commit_count INTEGER DEFAULT 0;")
+
     # 2. Action items table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS action_items (

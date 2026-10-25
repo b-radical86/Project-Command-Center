@@ -167,8 +167,12 @@ def analyze_repo_batch(batch_items: List[Dict[str, Any]]) -> BatchRepoStatusResp
     system_instruction = (
         "You are an expert Lead Software Architect and Portfolio Strategist analyzing GitHub repositories. "
         "Your task is to accurately categorize repositories into canonical lifecycle stages: "
-        "'Ideation & Planning', 'MVP In Progress', 'Debugging & Stabilization', 'Ready for Next Stage', or 'Maintenance / Parked'. "
-        "Extract technical summaries, identified architectural blockers, and key milestone items based strictly on the provided documentation and file trees."
+        "'Ideation & Planning', 'MVP In Progress', 'Debugging & Stabilization', 'Ready for Next Stage', or 'Maintenance / Parked'.\n\n"
+        "CRITICAL CLASSIFICATION GROUND RULES:\n"
+        "1. GROUND IN ACTUAL CODE & COMMITS: If a repository contains substantial source code (e.g. main.py/app.py, dozens of code files, test suites, feeds configuration) or a significant commit history (>= 15 commits), it is a functioning system. If its core platform has been delivered and documented for future evolution (such as Research Aggregator or NewsFeed), classify it as 'Ready for Next Stage'. Never classify an active codebase as 'Ideation & Planning'.\n"
+        "2. ACTIVE PROTOTYPES & SPRINTS: If a repository has architecture specs (e.g. SPEC_*.md) with initial active commits/tests underway (like Arcturus), classify as 'MVP In Progress'.\n"
+        "3. IDEATION & PLANNING THRESHOLD: Reserve 'Ideation & Planning' exclusively for empty stubs, pure initial scaffolding, or projects with 0-1 commits and no implementation code.\n"
+        "4. Extract technical summaries, identified architectural blockers, and key milestone items based on the provided documentation, code files, and git history."
     )
 
     batch_payload = []
@@ -176,7 +180,11 @@ def analyze_repo_batch(batch_items: List[Dict[str, Any]]) -> BatchRepoStatusResp
         batch_payload.append({
             "name_with_owner": item.get("name_with_owner"),
             "description": item.get("description", ""),
+            "active_branch": item.get("active_branch", "main"),
+            "commit_count": item.get("commit_count", 1),
+            "root_files": item.get("root_files", []),
             "directories": item.get("directories", []),
+            "metrics": item.get("metrics", {}),
             "open_issues": item.get("open_issues", []),
             "completion_pct": item.get("completion_pct", 0.0),
             "sanitized_docs": item.get("sanitized_docs", {}),
