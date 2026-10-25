@@ -13,6 +13,12 @@ The **Project Command Center** requires all changes to be verified against regre
 
 ## 2. Automated Test Commands
 
+### 2.0 Consolidated Pytest Test Suite (Recommended)
+```bash
+# Run the full automated test suite across db, parser, and openrouter
+pytest -v
+```
+
 Execute the following test suite from the repository root with `.venv` active:
 
 ### 2.1 Smoke & Import Verification

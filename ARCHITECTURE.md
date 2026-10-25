@@ -52,13 +52,16 @@ graph TD
 - **Endpoints**:
   - `GET /`: Serves static SPA dashboard.
   - `GET /api/projects`: Retrieves all enriched projects and stage classifications.
-  - `POST /api/projects/{id}/stage`: Persists manual stage overrides.
-  - `POST /api/projects/{id}/ai-toggle`: Enables or disables AI scanning for a given repository.
-  - `GET /api/stream/sync`: Server-Sent Events stream for real-time sync progression.
-  - `POST /api/sync`: Synchronous sync trigger.
+  - `GET /api/projects/{repo_id}`: Retrieves single repository details, docs, and action items.
+  - `PATCH /api/projects/{repo_id}`: Updates stage overrides, domain tags, or AI toggle.
+  - `GET /api/actions`: Retrieves all parsed action items and blockers.
+  - `PATCH /api/actions/{action_id}`: Updates action item completion status.
+  - `GET /api/enhancements`: Retrieves all generated AI enhancements and prompts.
+  - `PATCH /api/enhancements/{id}`: Updates enhancement review status.
+  - `POST /api/ideate/repo/{repo_id}`: Triggers single-repo deep dive and Antigravity prompt generation.
+  - `POST /api/ideate/portfolio`: Triggers portfolio-wide strategic cross-cutting analysis.
   - `GET /api/quota`: Real-time OpenRouter token and rate-limiting telemetry.
-  - `POST /api/ideate/portfolio`: Triggers portfolio-wide strategic analysis.
-  - `POST /api/ideate/{repo_id}`: Triggers single-repo deep dive and prompt generation.
+  - `GET /api/sync/stream`: Server-Sent Events (SSE) stream for real-time sync progression.
 
 ### 2.3 Secret Scrubbing & Document Sanitizer (`app/parser.py`)
 Before any local markdown or code snippet is stored or transmitted to OpenRouter:
@@ -81,27 +84,30 @@ SQLite 3 configured with Write-Ahead Logging (`WAL` mode) and `PRAGMA synchronou
 ### Tables
 1. **`repositories`**:
    - `id`: INTEGER PRIMARY KEY AUTOINCREMENT
-   - `github_id`: TEXT UNIQUE
+   - `name_with_owner`: TEXT UNIQUE
    - `name`: TEXT
-   - `name_with_owner`: TEXT
+   - `owner`: TEXT
+   - `is_private`: INTEGER (Boolean)
+   - `is_archived`: INTEGER (Boolean)
+   - `is_empty`: INTEGER (Boolean)
    - `description`: TEXT
-   - `url`: TEXT
-   - `is_private`: BOOLEAN
-   - `primary_language`: TEXT
-   - `languages`: TEXT (JSON array)
-   - `stars`: INTEGER
-   - `forks`: INTEGER
-   - `open_issues_count`: INTEGER
-   - `default_branch`: TEXT
-   - `detected_stage`: TEXT
-   - `stage_override`: TEXT
+   - `html_url`: TEXT
+   - `pushed_at`: TEXT
+   - `last_synced_sha`: TEXT
+   - `synced_stage`: TEXT
+   - `override_stage`: TEXT
+   - `domain_tag`: TEXT
+   - `ai_enabled`: INTEGER (Boolean)
    - `completion_pct`: REAL
-   - `has_tests`: BOOLEAN
-   - `has_docker`: BOOLEAN
-   - `has_ci`: BOOLEAN
-   - `ai_enabled`: BOOLEAN DEFAULT 1
+   - `open_issues_count`: INTEGER
    - `summary_json`: TEXT
+   - `last_synced_at`: TEXT
+   - `created_at`: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
    - `updated_at`: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+   - `is_local`: INTEGER (Boolean)
+   - `local_path`: TEXT
+   - `active_branch`: TEXT
+   - `commit_count`: INTEGER
 
 2. **`action_items`**:
    - `id`: INTEGER PRIMARY KEY AUTOINCREMENT

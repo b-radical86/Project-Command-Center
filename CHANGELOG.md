@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [2.1.0] - 2026-10-25
 
 ### Added
+- **Formal Pytest Automated Test Suite**:
+  - Added `tests/test_parser.py` (secret scrubbing, markdown parsing, status heuristics).
+  - Added `tests/test_db.py` (SQLite WAL mode initialization and quota telemetry).
+  - Added `tests/test_openrouter.py` (waterfall cascade ordering, markdown fence stripping, reasoning token fallback).
+  - Added `pytest>=8.0.0` dependency to `requirements.txt`.
 - **OpenRouter Free-Tier Waterfall Engine**:
   - Implemented `app/openrouter_service.py` using `openai` Python SDK with strict 5-tier waterfall:
     1. `nvidia/nemotron-3-ultra-550b-a55b:free`
