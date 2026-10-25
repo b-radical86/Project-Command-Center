@@ -13,6 +13,9 @@ SECRET_PATTERNS = [
     (re.compile(r'AIza[0-9A-Za-z\-_]{35}', re.IGNORECASE), '[REDACTED_GEMINI_KEY]'),
     (re.compile(r'AQ\.[A-Za-z0-9\-_]{40,}', re.IGNORECASE), '[REDACTED_GEMINI_KEY]'),
     
+    # OpenRouter keys
+    (re.compile(r'sk-or-v1-[A-Za-z0-9]{64}', re.IGNORECASE), '[REDACTED_OPENROUTER_KEY]'),
+    
     # OpenAI & other keys
     (re.compile(r'sk-[A-Za-z0-9\-_]{32,}', re.IGNORECASE), '[REDACTED_API_KEY]'),
     (re.compile(r're_[A-Za-z0-9_]{24,}', re.IGNORECASE), '[REDACTED_RESEND_KEY]'),

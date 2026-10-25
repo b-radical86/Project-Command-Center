@@ -32,7 +32,7 @@ from app.github_client import (
     fetch_all_repositories,
     fetch_repository_details
 )
-from app.gemini_service import (
+from app.openrouter_service import (
     analyze_repo_batch,
     generate_repo_enhancements,
     generate_cross_portfolio_strategy
@@ -50,7 +50,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Project Command Center API",
-    description="Unified GitHub & Gemini AI Studio Developer Command Center",
+    description="Unified GitHub & OpenRouter Developer Command Center",
     version="2.0.0",
     lifespan=lifespan
 )
@@ -343,7 +343,7 @@ async def trigger_repo_deep_dive(repo_id: int):
             "sanitized_docs": summary_data.get("sanitized_docs", {}),
         }
 
-        # Run Gemini enhancement plan
+        # Run OpenRouter enhancement plan
         plan = generate_repo_enhancements(payload)
 
         # Store enhancements into database
@@ -748,7 +748,7 @@ async def sync_stream(force: bool = False):
 
                 # Stage 4: Batched AI Status Pass (8 repos per call)
                 if ai_batch_queue:
-                    yield f"data: {json.dumps({'event': 'stage4_start', 'total_ai_repos': len(ai_batch_queue), 'message': f'Stage 4: Running Gemini Free-Tier status extraction across {len(ai_batch_queue)} AI-enabled repositories in batches of 8...'})}\n\n"
+                    yield f"data: {json.dumps({'event': 'stage4_start', 'total_ai_repos': len(ai_batch_queue), 'message': f'Stage 4: Running OpenRouter AI status extraction across {len(ai_batch_queue)} AI-enabled repositories in batches of 8...'})}\n\n"
                     await asyncio.sleep(0.1)
 
                     batch_size = 8

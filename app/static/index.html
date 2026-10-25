@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Project Command Center — GitHub & Gemini AI Studio</title>
+  <title>Project Command Center — GitHub & OpenRouter AI Studio</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Alpine.js -->
@@ -50,26 +50,31 @@
             Project Command Center
             <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v2.0</span>
           </h1>
-          <p class="text-xs text-slate-400">GitHub Discovery & Gemini AI Studio Free-Tier Strategist</p>
+          <p class="text-xs text-slate-400">GitHub Discovery & OpenRouter Multi-Model Strategist</p>
         </div>
       </div>
 
-      <!-- Live Free-Tier Quota Telemetry -->
+      <!-- Live OpenRouter Quota Telemetry -->
       <div class="hidden lg:flex items-center gap-4 bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-1.5 text-xs">
         <div class="flex items-center gap-2">
-          <span class="h-2 w-2 rounded-full" :class="quota.rpm < 12 ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span>
-          <span class="text-slate-400">RPM:</span>
-          <span class="font-mono font-semibold" :class="quota.rpm > 12 ? 'text-amber-400' : 'text-slate-200'" x-text="`${quota.rpm} / ${quota.rpm_limit}`">0 / 15</span>
+          <span class="h-2 w-2 rounded-full" :class="quota.rpm < 50 ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span>
+          <span class="text-slate-400">Model:</span>
+          <span class="font-mono font-semibold text-indigo-300" x-text="quota.model ? quota.model.split('/').pop() : 'OpenRouter'">Claude 3.5</span>
         </div>
         <div class="h-3 w-px bg-slate-800"></div>
         <div class="flex items-center gap-2">
-          <span class="text-slate-400">RPD:</span>
-          <span class="font-mono font-semibold text-slate-200" x-text="`${quota.rpd} / ${quota.rpd_limit}`">0 / 1500</span>
+          <span class="text-slate-400">RPM:</span>
+          <span class="font-mono font-semibold text-slate-200" x-text="`${quota.rpm} / ${quota.rpm_limit}`">0 / 60</span>
+        </div>
+        <div class="h-3 w-px bg-slate-800"></div>
+        <div class="flex items-center gap-2">
+          <span class="text-slate-400">Tokens:</span>
+          <span class="font-mono font-semibold text-slate-200" x-text="quota.total_tokens || 0">0</span>
         </div>
         <div class="h-3 w-px bg-slate-800"></div>
         <div class="flex items-center gap-1.5">
           <span class="text-slate-400">Paced:</span>
-          <span class="text-emerald-400 font-medium">4.0s interval</span>
+          <span class="text-emerald-400 font-medium">1.0s interval</span>
         </div>
       </div>
 
@@ -228,7 +233,7 @@
                     @click="toggleRepoAI(repo)" 
                     class="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded transition"
                     :class="repo.ai_enabled ? 'bg-indigo-950/80 text-indigo-300 border border-indigo-800/60' : 'bg-slate-900 text-slate-500 border border-slate-800'"
-                    :title="repo.ai_enabled ? 'AI Enabled: Gemini scans sanitized docs' : 'Deterministic Mode: Secrets/Client code protected from AI'"
+                    :title="repo.ai_enabled ? 'AI Enabled: OpenRouter scans sanitized docs' : 'Deterministic Mode: Secrets/Client code protected from AI'"
                   >
                     <span x-text="repo.ai_enabled ? 'AI On' : 'AI Off'"></span>
                   </button>
@@ -380,8 +385,8 @@
       <div class="flex items-center justify-between bg-gradient-to-r from-indigo-950/60 to-purple-950/40 p-5 rounded-2xl border border-indigo-500/20">
         <div class="space-y-1">
           <h2 class="text-base font-bold text-white flex items-center gap-2">
-            Gemini AI Studio Strategist
-            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium">Free Tier Optimized</span>
+            OpenRouter AI Studio Strategist
+            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium">Multi-Model Engine</span>
           </h2>
           <p class="text-xs text-slate-300 max-w-2xl">
             Executes single-call cross-portfolio brainstorming across all repositories to identify shared modules, quick weekend finish lines (< 2.5 hrs), and copy-ready Antigravity prompts.
@@ -529,7 +534,7 @@
             <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-400" x-text="activeRepo?.action_items?.length || 0"></span>
           </button>
           <button @click="drawerTab = 'docs'" :class="drawerTab === 'docs' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-3 border-b-2 transition">Harvested Docs</button>
-          <button @click="drawerTab = 'ai'" :class="drawerTab === 'ai' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-3 border-b-2 transition text-indigo-300 font-medium">Gemini Deep Dive ✦</button>
+          <button @click="drawerTab = 'ai'" :class="drawerTab === 'ai' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-3 border-b-2 transition text-indigo-300 font-medium">AI Deep Dive ✦</button>
         </div>
 
         <!-- Drawer Tab Contents -->
@@ -695,7 +700,7 @@
         repos: [],
         enhancements: [],
         blockers: [],
-        quota: { rpm: 0, rpm_limit: 15, rpd: 0, rpd_limit: 1500 },
+        quota: { provider: 'OpenRouter', model: 'anthropic/claude-3.5-sonnet', rpm: 0, rpm_limit: 60, rpd: 0, rpd_limit: 10000, total_tokens: 0 },
 
         isSyncing: false,
         syncStatus: { active: false, message: '' },

@@ -139,14 +139,15 @@ def get_quota_telemetry() -> Dict[str, Any]:
         rpd_count = rpd_row["count"] if rpd_row else 0
         rpd_tokens = rpd_row["tokens"] if rpd_row else 0
 
-        # Limits for standard free tier: 15 RPM, 1500 RPD, 1M TPM
         return {
+            "provider": "OpenRouter",
+            "active_model": os.environ.get("OPENROUTER_MODEL", "nvidia/nemotron-3-ultra-550b-a55b:free"),
             "rpm": rpm_count,
-            "rpm_limit": 15,
+            "rpm_limit": 60,
             "rpm_tokens": rpm_tokens,
             "tpm_limit": 1000000,
             "rpd": rpd_count,
-            "rpd_limit": 1500,
+            "rpd_limit": 5000,
             "rpd_tokens": rpd_tokens,
         }
     finally:
