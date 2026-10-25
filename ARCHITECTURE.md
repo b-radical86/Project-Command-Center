@@ -127,8 +127,9 @@ SQLite 3 configured with Write-Ahead Logging (`WAL` mode) and `PRAGMA synchronou
    - `repo_id`: INTEGER REFERENCES repositories(id)
    - `category`: TEXT ('quick_win', 'next_stage', 'synergy')
    - `title`: TEXT
-   - `rationale`: TEXT
-   - `antigravity_prompt`: TEXT
+   - `description`: TEXT (Non-technical, plain-English summary of what the suggestion does in everyday language)
+   - `rationale`: TEXT (Architectural rationale and duplication eliminated)
+   - `antigravity_prompt`: TEXT (Copy-ready pair programming prompt)
    - `status`: TEXT DEFAULT 'suggested'
    - `created_at`: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 

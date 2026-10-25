@@ -15,8 +15,9 @@ The **Project Command Center** requires all changes to be verified against regre
 
 ### 2.0 Consolidated Pytest Test Suite (Recommended)
 ```bash
-# Run the full automated test suite across db, parser, and openrouter
+# Run the full automated test suite across db, parser, openrouter, local_scanner, and ideas
 pytest -v
+# Verified: 19 passed across all modules
 ```
 
 Execute the following test suite from the repository root with `.venv` active:
@@ -95,5 +96,6 @@ Before pushing any major UI or backend refactor:
 - [ ] **Stage Persistence**: Refresh the page; verify that the manual stage override persists.
 - [ ] **AI Toggle**: Click `AI On`/`AI Off` on a card; verify the badge reflects the change and updates SQLite.
 - [ ] **Blockers View**: Switch to the **Blockers** tab; verify all pending blocker action items are visible with their source files.
-- [ ] **AI Deep Dive Drawer**: Click **AI Deep Dive ✦** in the drawer; click **Analyze Now**; verify Quick Wins and Next Milestones appear with a working **Copy Antigravity Prompt** button.
+- [ ] **AI Deep Dive Drawer**: Click **AI Deep Dive ✦** in the drawer; click **Analyze Now**; verify Quick Wins and Next Milestones appear with a plain-English overview, expandable technical details, and a working **Copy Antigravity Prompt** button.
+- [ ] **AI Studio Strategist**: Open the **AI Studio** tab; verify suggestions show non-technical overviews, collapsible technical architecture details, and copy-ready Antigravity buttons.
 - [ ] **Telemetry Pill**: Verify that the top navigation badge displays `Model: nemotron-3-ultra-550b-a55b:free`, live RPM, and token count.

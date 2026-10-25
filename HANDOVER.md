@@ -2,17 +2,27 @@
 
 ## 1. Executive Summary
 - **Current System Status**: **STABLE & PRODUCTION READY (LOCAL)**
-- **Latest Commits**: `e0d4d96` on branch `main` (`origin/main`)
 - **Git Remote**: `https://github.com/b-radical86/Project-Command-Center.git`
 - **Active Backend Server**: Running on `http://127.0.0.1:8000` via `./run.sh` (Background daemon task)
 - **Active AI Provider**: **OpenRouter** (Configured with free-tier waterfall: Nemotron 550B -> Nemotron 3.5 -> Inkling -> Nemotron 120B -> OpenRouter Free)
-- **Automated Test Suite**: 18/18 Pytest tests passing cleanly across db, parser, openrouter, local_scanner, and ideas.
+- **Automated Test Suite**: 19/19 Pytest tests passing cleanly across db, parser, openrouter, local_scanner, and ideas.
 
 ---
 
 ## 2. Recent Accomplishments (Current Iteration)
 
-1. **Historical Project Ideas Vault & Deduplication Engine**:
+1. **Non-Technical Project Descriptions in AI Studio Strategist**:
+   - Added `description` column to SQLite `ai_enhancements` table with automated backward-compatible migration.
+   - Migrated all existing enhancements in `projects.db` to include clear, plain-English summaries explaining the user value in everyday terms.
+   - Updated Pydantic schemas (`QuickWinItem`, `MilestoneItem`, `SynergyItem`, `WeekendFinisherItem`, `RoadmapItem`) with non-technical description fields.
+   - Updated OpenRouter generation prompts in `app/openrouter_service.py` to instruct LLMs to produce plain-English descriptions free of developer jargon.
+   - Redesigned the card presentation in `app/static/index.html` across Cross-Project Synergies, Weekend Finishers, Next Milestones, and the Repo Detail modal:
+     - Prominent "Plain-English Overview" callout block.
+     - Collapsible `<details>` disclosure widget for "Technical Rationale & Architecture".
+     - Prominent, styled "Copy Antigravity Prompt" button with clipboard confirmation.
+   - Added automated unit test `test_ai_enhancements_schema_and_description` in `tests/test_db.py`.
+
+2. **Historical Project Ideas Vault & Deduplication Engine**:
    - Added `project_ideas` database table in SQLite to track concepts, domain tags, statuses (`parked`, `incubating`, `under_review`, `graduated_to_repo`, `discarded`), and revisit conditions.
    - Built `app/ideas_service.py` with custom stemming and composite similarity scoring (Jaccard token overlap + Levenshtein character ratio) to catch duplicate concepts and rephrasings.
    - Added REST API routes (`GET /api/ideas`, `POST /api/ideas`, `POST /api/ideas/check-duplicate`, `PATCH /api/ideas/{id}`).

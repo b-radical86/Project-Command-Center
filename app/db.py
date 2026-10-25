@@ -79,6 +79,7 @@ def init_db():
         repo_id INTEGER, -- nullable for portfolio-wide synergies
         category TEXT NOT NULL, -- 'quick_win', 'next_stage', 'synergy'
         title TEXT NOT NULL,
+        description TEXT DEFAULT '', -- Non-technical, plain-English summary of what the suggestion does and why it helps
         rationale TEXT NOT NULL,
         antigravity_prompt TEXT NOT NULL,
         status TEXT DEFAULT 'suggested', -- 'suggested', 'accepted', 'completed', 'dismissed'
@@ -86,6 +87,12 @@ def init_db():
         FOREIGN KEY(repo_id) REFERENCES repositories(id) ON DELETE CASCADE
     );
     """)
+
+    # Column migration for ai_enhancements.description if upgrading from earlier schema
+    try:
+        cursor.execute("ALTER TABLE ai_enhancements ADD COLUMN description TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
 
     # 4. API quota log table
     cursor.execute("""

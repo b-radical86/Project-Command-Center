@@ -358,15 +358,15 @@ async def trigger_repo_deep_dive(repo_id: int):
         # Store enhancements into database
         for qw in plan.quick_wins:
             conn.execute("""
-                INSERT INTO ai_enhancements (repo_id, category, title, rationale, antigravity_prompt, status)
-                VALUES (?, 'quick_win', ?, ?, ?, 'suggested')
-            """, (repo_id, qw.title, qw.rationale, qw.antigravity_prompt))
+                INSERT INTO ai_enhancements (repo_id, category, title, description, rationale, antigravity_prompt, status)
+                VALUES (?, 'quick_win', ?, ?, ?, ?, 'suggested')
+            """, (repo_id, qw.title, qw.description or qw.title, qw.rationale, qw.antigravity_prompt))
 
         for nm in plan.next_milestones:
             conn.execute("""
-                INSERT INTO ai_enhancements (repo_id, category, title, rationale, antigravity_prompt, status)
-                VALUES (?, 'next_stage', ?, ?, ?, 'suggested')
-            """, (repo_id, nm.title, nm.rationale, nm.antigravity_prompt))
+                INSERT INTO ai_enhancements (repo_id, category, title, description, rationale, antigravity_prompt, status)
+                VALUES (?, 'next_stage', ?, ?, ?, ?, 'suggested')
+            """, (repo_id, nm.title, nm.description or nm.title, nm.rationale, nm.antigravity_prompt))
 
         conn.commit()
         return plan.model_dump()
@@ -407,18 +407,27 @@ async def trigger_portfolio_brainstorm():
         # Store synergies
         for syn in strategy.synergies:
             conn.execute("""
-                INSERT INTO ai_enhancements (repo_id, category, title, rationale, antigravity_prompt, status)
-                VALUES (NULL, 'synergy', ?, ?, ?, 'suggested')
-            """, (syn.title, f"Affected repos: {', '.join(syn.affected_repos)}. {syn.rationale}", syn.antigravity_prompt))
+                INSERT INTO ai_enhancements (repo_id, category, title, description, rationale, antigravity_prompt, status)
+                VALUES (NULL, 'synergy', ?, ?, ?, ?, 'suggested')
+            """, (syn.title, syn.description or syn.title, f"Affected repos: {', '.join(syn.affected_repos)}. {syn.rationale}", syn.antigravity_prompt))
 
         # Store weekend finishers
         for wf in strategy.weekend_finishers:
             repo_row = conn.execute("SELECT id FROM repositories WHERE name_with_owner = ? OR name = ?", (wf.repo_name, wf.repo_name)).fetchone()
             r_id = repo_row["id"] if repo_row else None
             conn.execute("""
-                INSERT INTO ai_enhancements (repo_id, category, title, rationale, antigravity_prompt, status)
-                VALUES (?, 'quick_win', ?, ?, ?, 'suggested')
-            """, (r_id, f"[Weekend Finisher] {wf.title}", wf.rationale, wf.antigravity_prompt))
+                INSERT INTO ai_enhancements (repo_id, category, title, description, rationale, antigravity_prompt, status)
+                VALUES (?, 'quick_win', ?, ?, ?, ?, 'suggested')
+            """, (r_id, f"[Weekend Finisher] {wf.title}", wf.description or wf.title, wf.rationale, wf.antigravity_prompt))
+
+        # Store next-stage roadmap
+        for rm in strategy.next_stage_roadmap:
+            repo_row = conn.execute("SELECT id FROM repositories WHERE name_with_owner = ? OR name = ?", (rm.repo_name, rm.repo_name)).fetchone()
+            r_id = repo_row["id"] if repo_row else None
+            conn.execute("""
+                INSERT INTO ai_enhancements (repo_id, category, title, description, rationale, antigravity_prompt, status)
+                VALUES (?, 'next_stage', ?, ?, ?, ?, 'suggested')
+            """, (r_id, f"[{rm.next_stage}] {rm.repo_name}", rm.description or rm.repo_name, rm.rationale, rm.antigravity_prompt))
 
         conn.commit()
         return strategy.model_dump()

@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.2.0] - 2026-10-25
+
+### Added
+- **Non-Technical Project Descriptions in AI Studio Strategist**:
+  - Added `description` column to SQLite `ai_enhancements` table with automated schema migration.
+  - Updated `SynergyItem`, `WeekendFinisherItem`, `RoadmapItem`, `QuickWinItem`, and `MilestoneItem` Pydantic schemas with plain-English non-technical summary fields.
+  - Updated OpenRouter generation prompts in `app/openrouter_service.py` to instruct models to produce 1-2 sentence plain-English overviews free of developer jargon.
+  - Updated `app/static/index.html` across all 3 AI Studio columns (Synergies, Weekend Finishers, Next Milestones) and Repo Detail Drawer to render prominent "Plain-English Overview" callout cards.
+  - Added HTML5 `<details>` collapsible container for Technical Rationale & Architecture details, keeping the interface uncluttered while retaining deep technical information.
+  - Maintained prominent, styled "Copy Antigravity Prompt" button with clipboard confirmation.
+  - Added automated unit test `test_ai_enhancements_schema_and_description` in `tests/test_db.py` (total 19/19 tests passing).
+
+---
+
 ## [2.1.0] - 2026-10-25
 
 ### Added

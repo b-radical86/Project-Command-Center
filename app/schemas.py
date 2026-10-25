@@ -31,12 +31,14 @@ class BatchRepoStatusResponse(BaseModel):
 
 class QuickWinItem(BaseModel):
     title: str = Field(description="Actionable task title (< 2 hours)")
+    description: str = Field(default="", description="Non-technical, plain-English summary of what this project/task does and why it helps in everyday language without software developer jargon")
     rationale: str = Field(description="Why this delivers immediate high ROI")
     antigravity_prompt: str = Field(description="Complete, copy-ready prompt for Antigravity AI pair programmer")
     est_hours: float = Field(default=1.5, description="Estimated hours to complete")
 
 class MilestoneItem(BaseModel):
     title: str = Field(description="Major feature or architecture milestone")
+    description: str = Field(default="", description="Non-technical, plain-English summary of what this milestone achieves in everyday language without developer jargon")
     rationale: str = Field(description="Strategic importance to next phase")
     antigravity_prompt: str = Field(description="Complete, copy-ready prompt for Antigravity AI pair programmer")
 
@@ -47,6 +49,7 @@ class ProjectEnhancementPlan(BaseModel):
 
 class SynergyItem(BaseModel):
     title: str = Field(description="Shared component or cross-repo integration opportunity")
+    description: str = Field(default="", description="Non-technical, plain-English summary of what this shared project does and how it helps the apps work together in everyday language")
     affected_repos: List[str] = Field(description="Names of repositories that benefit")
     rationale: str = Field(description="Architectural rationale and duplication eliminated")
     antigravity_prompt: str = Field(description="Ready prompt to implement the cross-project shared module")
@@ -54,6 +57,7 @@ class SynergyItem(BaseModel):
 class WeekendFinisherItem(BaseModel):
     repo_name: str = Field(description="Repository close to a clean finish")
     title: str = Field(description="Specific milestone to wrap up")
+    description: str = Field(default="", description="Non-technical, plain-English summary of what is being finished and how the end product improves in everyday language")
     rationale: str = Field(description="Why this can be wrapped up quickly for high impact")
     antigravity_prompt: str = Field(description="Antigravity prompt to finish the feature")
     est_hours: float = Field(default=2.0, description="Estimated hours (< 3 hours)")
@@ -61,6 +65,7 @@ class WeekendFinisherItem(BaseModel):
 class RoadmapItem(BaseModel):
     repo_name: str = Field(description="Repository name")
     next_stage: CanonicalStage = Field(description="Recommended target stage")
+    description: str = Field(default="", description="Non-technical, plain-English summary of the next phase and user benefits")
     rationale: str = Field(description="Strategic next step")
     antigravity_prompt: str = Field(description="Antigravity prompt to initiate next stage")
 

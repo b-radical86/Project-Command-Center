@@ -252,7 +252,11 @@ def generate_repo_enhancements(repo_data: Dict[str, Any]) -> ProjectEnhancementP
         "OUTPUT REQUIREMENTS:\n"
         "1. 2 to 3 'quick_wins' that can be built in under 2 hours with immediate developer ROI.\n"
         "2. 2 to 3 'next_milestones' advancing the core product to its next major capability.\n"
-        "3. Every item MUST have a comprehensive, copy-ready 'antigravity_prompt' that a developer can paste directly into Antigravity."
+        "3. Every item MUST have:\n"
+        "   - 'title': Actionable title\n"
+        "   - 'description': Plain-English, non-technical summary (1-2 sentences) explaining in simple everyday language what this suggested improvement does and why it helps, completely free of developer jargon.\n"
+        "   - 'rationale': Technical/architectural justification for why this delivers high ROI.\n"
+        "   - 'antigravity_prompt': A comprehensive, copy-ready prompt written in first-person pair-programming instructions with exact files to touch, step-by-step logic, edge cases, and verification commands."
     )
 
     return ai_engine.generate_structured(
@@ -288,10 +292,15 @@ def generate_cross_portfolio_strategy(all_repos: List[Dict[str, Any]]) -> CrossP
 
     prompt = (
         "Analyze the following portfolio of software projects and identify strategic portfolio-wide engineering opportunities:\n\n"
+        "OUTPUT REQUIREMENTS:\n"
         "1. 'synergies': Find 2-4 reusable components, shared libraries, or integration bridges between 2 or more projects.\n"
         "2. 'weekend_finishers': Identify 2-4 projects with high completion (or high leverage) that can reach a major milestone in < 2.5 hours.\n"
         "3. 'next_stage_roadmap': Outline high-impact next-stage goals for the key projects.\n\n"
-        "Provide copy-ready Antigravity prompts for all items.\n\n"
+        "FOR EVERY ITEM ACROSS ALL SECTIONS, YOU MUST PROVIDE:\n"
+        "- 'title': Concise, compelling project title\n"
+        "- 'description': Plain-English, non-technical summary (1-2 sentences) explaining what this suggested project does and how it helps the user in everyday terminology without software jargon (no references to AST, token buckets, RPC, or microservices).\n"
+        "- 'rationale': Technical and architectural reasoning.\n"
+        "- 'antigravity_prompt': Highly detailed, copy-ready Antigravity pair programming prompt with exact step-by-step instructions, files, and test commands.\n\n"
         f"PORTFOLIO DIGEST:\n{json.dumps(summaries, indent=2)}"
     )
 
