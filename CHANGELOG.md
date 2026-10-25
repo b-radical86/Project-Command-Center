@@ -5,6 +5,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.4.0] - 2026-10-25
+
+### Added
+- **Comprehensive Portfolio & Telemetry Matrix (`currentView === 'table'`)**:
+  - Replaced basic table with an enterprise operational matrix tracking 6 core categories across all repositories:
+    - **AI & External API Linkage**: Active provider (`Google AI Studio`, `OpenAI`, `Anthropic`, `OpenRouter`, `Vertex AI`, `Local`), billing tier (`Free` vs `Paid`), and external hooks (`Home Assistant`, `MQTT`, `Resend`, `Market Data`, `GitHub`).
+    - **Model & SDK Currency**: Detects exact packages (`google-genai` vs legacy `google-generativeai`, `openai v1+`), extracted hardcoded model strings (`gemini-2.5-flash`, `gpt-4o`, `nemotron-3-ultra-550b`), and attaches 1-click Antigravity SDK migration prompts.
+    - **Environment & Secret Readiness**: Compares required keys against present keys in `.env` (e.g. `4/4 Present` vs `Missing: MACRO_DB_PATH`) with strict zero-value leakage (only variable names are extracted, never values).
+    - **Runtime & Port Topology**: Identifies target stack (`FastAPI :8000`, `Streamlit :8501`, `Vite :5173`, `Docker`, `ESP32 Firmware`, `CLI`) and performs real-time localhost socket heartbeats (150ms timeout) reporting live `Online` / `Offline` status.
+    - **Git & Local Sync Drift**: Measures days since last commit, uncommitted local edits (dirty working tree count), and branch ahead/behind status.
+    - **Engineering Maturity Score**: Computes a 0–100 score and assigns grades (A+/A/B/C/D) evaluating automated unit tests, CI workflows, Pydantic/TypeScript validation, and `AGENTS.md`/`CLAUDE.md` context files.
+- **Deterministic AST & Manifest Scanner (`app/telemetry_scanner.py`)**:
+  - Decoupled code and manifest inspection from AI summarization with 100% offline regex, AST, and manifest parsing (< 30ms total runtime across 11 projects) requiring zero LLM tokens.
+- **Provider Cost & Data-Governance Radar**:
+  - Color-codes each project card by data-handling posture (`Deterministic / Local Only`, `Paid Commercial API`, `Free Tier Consumer API`).
+  - Automated governance rule: projects tagged `Wealth` that connect to a free-tier consumer AI API or public repo visibility surface a high-priority data residency warning banner.
+- **Secret Rotation Blast-Radius Filter (`/api/matrix/secret-lookup`)**:
+  - Cross-repo lookup endpoint and reactive UI dropdown to instantly isolate all projects dependent on a specific secret (e.g. `OPENROUTER_API_KEY`, `GEMINI_API_KEY`, `GITHUB_TOKEN`) with an active filter reset banner.
+- **Agent Readiness & Handoff Auditor**:
+  - Grades repositories on context file presence (`AGENTS.md`/`CLAUDE.md`) with one-click Antigravity context generation prompts.
+- **Automated Test Coverage**:
+  - Authored `tests/test_telemetry_scanner.py` with 4 test suites verifying secret name extraction without leakage, synthetic repository inspection, Wealth domain data residency policy warnings, and the secret lookup endpoint (suite total: 23 passed).
+
+---
+
 ## [2.3.0] - 2026-10-25
 
 ### Added

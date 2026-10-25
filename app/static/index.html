@@ -283,72 +283,365 @@
       </template>
     </div>
 
-    <!-- VIEW 2: LIST / TABLE VIEW -->
-    <div x-show="currentView === 'table'" class="bg-slate-900/60 rounded-xl border border-slate-800 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs">
-          <thead class="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-            <tr>
-              <th class="py-3 px-4">Repository</th>
-              <th class="py-3 px-3">Domain</th>
-              <th class="py-3 px-3">Stage</th>
-              <th class="py-3 px-3">Completion</th>
-              <th class="py-3 px-3">Checklists</th>
-              <th class="py-3 px-3">Issues</th>
-              <th class="py-3 px-3">AI Mode</th>
-              <th class="py-3 px-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-800/60">
-            <template x-for="repo in filteredRepos" :key="repo.id">
-              <tr class="hover:bg-slate-800/30 transition">
-                <td class="py-3 px-4">
-                  <div class="flex items-center gap-2">
-                    <span class="font-semibold text-slate-100" x-text="repo.name"></span>
-                    <template x-if="repo.is_local">
-                      <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" x-text="repo.active_branch ? `local:${repo.active_branch}` : 'local'"></span>
-                    </template>
-                  </div>
-                  <div class="text-[11px] text-slate-500" x-text="repo.name_with_owner"></div>
-                </td>
-                <td class="py-3 px-3">
-                  <select 
-                    @change="updateRepoDomain(repo, $event.target.value)" 
-                    class="bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-xs text-slate-300"
-                  >
-                    <template x-for="d in ['General', 'Family', 'Wealth', 'Hobbies', 'Hardware']" :key="d">
-                      <option :value="d" :selected="d === repo.domain_tag" x-text="d"></option>
-                    </template>
-                  </select>
-                </td>
-                <td class="py-3 px-3">
-                  <span class="px-2 py-0.5 rounded text-[11px] font-medium" :class="stageBadgeClass(repo.effective_stage)" x-text="repo.effective_stage"></span>
-                </td>
-                <td class="py-3 px-3">
-                  <div class="flex items-center gap-2">
-                    <span class="font-mono text-[11px]" x-text="`${repo.completion_pct}%`"></span>
-                    <div class="w-16 bg-slate-800 h-1 rounded-full overflow-hidden">
-                      <div class="bg-indigo-500 h-1 rounded-full" :style="`width: ${repo.completion_pct}%`"></div>
-                    </div>
-                  </div>
-                </td>
-                <td class="py-3 px-3 font-mono text-slate-400" x-text="repo.action_counts ? `${repo.action_counts.completed}/${repo.action_counts.total}` : '0/0'"></td>
-                <td class="py-3 px-3 font-mono text-slate-400" x-text="repo.open_issues_count"></td>
-                <td class="py-3 px-3">
-                  <button 
-                    @click="toggleRepoAI(repo)" 
-                    class="text-[10px] px-2 py-0.5 rounded border"
-                    :class="repo.ai_enabled ? 'bg-indigo-950 text-indigo-300 border-indigo-700' : 'bg-slate-900 text-slate-500 border-slate-800'"
-                    x-text="repo.ai_enabled ? 'Enabled' : 'Deterministic'"
-                  ></button>
-                </td>
-                <td class="py-3 px-4 text-right">
-                  <button @click="openInspect(repo.id)" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">Inspect &rarr;</button>
-                </td>
-              </tr>
+    <!-- VIEW 2: COMPREHENSIVE PORTFOLIO & TELEMETRY MATRIX -->
+    <div x-show="currentView === 'table'" class="space-y-4">
+      
+      <!-- Top Summary Metric Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <!-- Total Repos -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 space-y-1">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Portfolio</span>
+          <div class="text-lg font-bold text-white flex items-center gap-1.5">
+            <span x-text="repos.length">0</span>
+            <span class="text-[10px] font-normal text-slate-500 font-mono">repos</span>
+          </div>
+        </div>
+
+        <!-- Live Online Ports -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 space-y-1">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Live Online Ports</span>
+          <div class="text-lg font-bold text-emerald-400 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span x-text="totalOnlinePorts">0</span>
+            <span class="text-[10px] font-normal text-slate-500 font-mono">active</span>
+          </div>
+        </div>
+
+        <!-- Missing Secrets -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 space-y-1">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Secret Readiness</span>
+          <div class="text-lg font-bold flex items-center gap-1.5" :class="totalMissingSecrets > 0 ? 'text-amber-400' : 'text-emerald-400'">
+            <span x-text="totalMissingSecrets">0</span>
+            <span class="text-[10px] font-normal text-slate-500 font-mono" x-text="totalMissingSecrets > 0 ? 'missing keys' : 'all ready'"></span>
+          </div>
+        </div>
+
+        <!-- Git Local Drift -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 space-y-1">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Git Local Drift</span>
+          <div class="text-lg font-bold flex items-center gap-1.5" :class="totalDriftedRepos > 0 ? 'text-amber-400' : 'text-slate-300'">
+            <span x-text="totalDriftedRepos">0</span>
+            <span class="text-[10px] font-normal text-slate-500 font-mono">drifted</span>
+          </div>
+        </div>
+
+        <!-- Policy / Governance Alerts -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 space-y-1">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Governance Alerts</span>
+          <div class="text-lg font-bold flex items-center gap-1.5" :class="totalGovernanceAlerts > 0 ? 'text-rose-400' : 'text-emerald-400'">
+            <span x-text="totalGovernanceAlerts">0</span>
+            <span class="text-[10px] font-normal text-slate-500 font-mono" x-text="totalGovernanceAlerts > 0 ? 'risks' : 'clean'"></span>
+          </div>
+        </div>
+
+        <!-- SDK Deprecations -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 space-y-1">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">SDK Deprecations</span>
+          <div class="text-lg font-bold flex items-center gap-1.5" :class="totalSdkDeprecations > 0 ? 'text-amber-400' : 'text-emerald-400'">
+            <span x-text="totalSdkDeprecations">0</span>
+            <span class="text-[10px] font-normal text-slate-500 font-mono">flags</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Matrix Filter Toolbar & Secret Blast-Radius Selector -->
+      <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Governance Posture Filter -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-400 text-[10px] uppercase font-bold">Posture:</span>
+            <select x-model="matrixGovernanceFilter" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-300 focus:outline-none focus:border-indigo-500 text-xs">
+              <option value="All">All Postures</option>
+              <option value="Deterministic">Deterministic / Local Only</option>
+              <option value="Free Tier">Free Tier Consumer API</option>
+              <option value="Paid Commercial">Paid Commercial API</option>
+              <option value="Alerts">⚠️ Policy Warnings Only</option>
+            </select>
+          </div>
+
+          <!-- Secret Readiness Filter -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-400 text-[10px] uppercase font-bold">Secrets:</span>
+            <select x-model="matrixSecretFilter" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-300 focus:outline-none focus:border-indigo-500 text-xs">
+              <option value="All">All Statuses</option>
+              <option value="Ready">Ready (100% Keys Present)</option>
+              <option value="Missing">Missing Keys</option>
+            </select>
+          </div>
+
+          <!-- Drift Filter -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-400 text-[10px] uppercase font-bold">Git Drift:</span>
+            <select x-model="matrixDriftFilter" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-300 focus:outline-none focus:border-indigo-500 text-xs">
+              <option value="All">All States</option>
+              <option value="Dirty">Dirty Working Tree Only</option>
+              <option value="Ahead">Ahead of Origin</option>
+              <option value="Behind">Behind Origin</option>
+              <option value="Synced">Synced</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Secret Rotation Blast-Radius Lookup Dropdown -->
+        <div class="flex items-center gap-2">
+          <span class="text-indigo-400 font-semibold text-[11px] flex items-center gap-1">
+            <span>🔑</span> Blast-Radius:
+          </span>
+          <select x-model="selectedSecretKey" class="bg-slate-950 border border-indigo-500/40 rounded-lg px-2.5 py-1 text-indigo-200 focus:outline-none focus:border-indigo-400 text-xs font-mono">
+            <option value="">Filter by credential name...</option>
+            <template x-for="k in allSecretKeys" :key="k">
+              <option :value="k" x-text="k"></option>
             </template>
-          </tbody>
-        </table>
+          </select>
+          <button x-show="selectedSecretKey" @click="clearSecretFilter()" class="text-slate-400 hover:text-white text-xs underline">Clear</button>
+        </div>
+      </div>
+
+      <!-- Secret Blast-Radius Banner when selected -->
+      <div x-show="selectedSecretKey" class="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-3 flex items-center justify-between text-xs text-indigo-200">
+        <div class="flex items-center gap-2">
+          <span class="text-base">🔑</span>
+          <span>Secret Rotation Radar: Displaying <strong class="text-white" x-text="filteredRepos.length"></strong> repositories that depend on <code class="px-1.5 py-0.5 rounded bg-indigo-900/60 text-indigo-300 font-mono" x-text="selectedSecretKey"></code>.</span>
+        </div>
+        <button @click="clearSecretFilter()" class="text-xs bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/30 px-2.5 py-1 rounded transition">Reset Filter</button>
+      </div>
+
+      <!-- The Main Enterprise Matrix Table -->
+      <div class="bg-slate-900/70 rounded-xl border border-slate-800 overflow-hidden shadow-xl">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs min-w-[1300px]">
+            <thead class="bg-slate-950/90 border-b border-slate-800 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+              <tr>
+                <th class="py-3.5 px-4 w-60">Repository & Posture</th>
+                <th class="py-3.5 px-3 w-52">AI & API Linkage</th>
+                <th class="py-3.5 px-3 w-48">Model & SDK Currency</th>
+                <th class="py-3.5 px-3 w-48">Secret Readiness</th>
+                <th class="py-3.5 px-3 w-44">Runtime & Heartbeat</th>
+                <th class="py-3.5 px-3 w-44">Git & Local Drift</th>
+                <th class="py-3.5 px-3 w-44">Maturity Score</th>
+                <th class="py-3.5 px-4 w-40 text-right">Stage & Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 font-sans">
+              <template x-for="repo in filteredRepos" :key="repo.id">
+                <tr class="hover:bg-slate-800/30 transition group">
+                  
+                  <!-- 1. Repository & Governance Posture -->
+                  <td class="py-3.5 px-4 align-top space-y-1.5">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="font-bold text-slate-100 text-xs" x-text="repo.name"></span>
+                      <a :href="repo.html_url" target="_blank" class="text-slate-500 hover:text-indigo-400 text-xs">↗</a>
+                      <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700" x-text="repo.domain_tag"></span>
+                    </div>
+                    <div class="text-[10px] text-slate-500 font-mono truncate" x-text="repo.name_with_owner"></div>
+
+                    <!-- Governance Posture Badge -->
+                    <div>
+                      <span 
+                        class="text-[9px] font-medium px-2 py-0.5 rounded-full inline-block border"
+                        :class="{
+                          'bg-emerald-500/10 text-emerald-300 border-emerald-500/30': repo.telemetry?.ai_linkage?.governance_posture?.includes('Deterministic'),
+                          'bg-indigo-500/10 text-indigo-300 border-indigo-500/30': repo.telemetry?.ai_linkage?.governance_posture?.includes('Paid Commercial'),
+                          'bg-slate-800 text-slate-300 border-slate-700': repo.telemetry?.ai_linkage?.governance_posture?.includes('Free Tier')
+                        }"
+                        x-text="repo.telemetry?.ai_linkage?.governance_posture || 'Deterministic / Local'"
+                      ></span>
+                    </div>
+
+                    <!-- Policy Alert if triggered -->
+                    <template x-if="repo.telemetry?.ai_linkage?.governance_alert">
+                      <div class="text-[10px] text-rose-300 bg-rose-950/30 border border-rose-500/30 p-1.5 rounded leading-tight flex items-start gap-1 mt-1">
+                        <span class="shrink-0">⚠️</span>
+                        <span x-text="repo.telemetry.ai_linkage.governance_alert"></span>
+                      </div>
+                    </template>
+                  </td>
+
+                  <!-- 2. AI & External API Linkage -->
+                  <td class="py-3.5 px-3 align-top space-y-1.5">
+                    <div class="space-y-1">
+                      <div class="text-xs font-semibold text-slate-200" x-text="repo.telemetry?.ai_linkage?.primary_provider || 'Deterministic / Local'"></div>
+                      <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800/80 text-slate-400 border border-slate-700/60" x-text="`Tier: ${repo.telemetry?.ai_linkage?.billing_tier || 'None'}`"></span>
+                    </div>
+                    <!-- Third-party hooks -->
+                    <div class="flex flex-wrap gap-1 pt-0.5">
+                      <template x-for="hook in repo.telemetry?.ai_linkage?.third_party_hooks || []" :key="hook">
+                        <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-950 text-indigo-300 border border-indigo-500/20" x-text="hook"></span>
+                      </template>
+                      <span x-show="!repo.telemetry?.ai_linkage?.third_party_hooks?.length" class="text-[10px] text-slate-500 italic">No external hooks</span>
+                    </div>
+                  </td>
+
+                  <!-- 3. Model & SDK Currency -->
+                  <td class="py-3.5 px-3 align-top space-y-1.5">
+                    <!-- SDK package currency -->
+                    <div class="flex flex-wrap gap-1">
+                      <template x-for="pkg in repo.telemetry?.sdk_currency?.packages || []" :key="pkg.name">
+                        <span 
+                          class="text-[9px] font-mono px-1.5 py-0.5 rounded border flex items-center gap-1"
+                          :class="pkg.is_deprecated ? 'bg-amber-500/10 text-amber-300 border-amber-500/30 font-bold' : 'bg-slate-950 text-emerald-400 border-emerald-500/20'"
+                        >
+                          <span x-text="pkg.name"></span>
+                          <span class="text-[8px] opacity-75" x-text="pkg.currency"></span>
+                        </span>
+                      </template>
+                      <span x-show="!repo.telemetry?.sdk_currency?.packages?.length" class="text-[10px] text-slate-500 italic">No AI SDK</span>
+                    </div>
+
+                    <!-- Detected Models -->
+                    <div class="text-[10px] font-mono text-slate-300 truncate" :title="repo.telemetry?.sdk_currency?.detected_models?.join(', ')">
+                      <span class="text-slate-500">Models:</span>
+                      <span x-text="repo.telemetry?.sdk_currency?.detected_models?.slice(0, 2)?.join(', ') || 'Rule-based'"></span>
+                    </div>
+
+                    <!-- Deprecation warning / Antigravity migration button -->
+                    <template x-if="repo.telemetry?.sdk_currency?.deprecation_warnings?.length">
+                      <div class="pt-1">
+                        <button 
+                          @click="copyPrompt(repo.telemetry.sdk_currency.migration_prompt, `mig_${repo.id}`)"
+                          class="text-[9px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded transition flex items-center gap-1"
+                          title="Copy one-click Antigravity migration prompt"
+                        >
+                          <span>⚠️</span>
+                          <span x-text="copiedId === `mig_${repo.id}` ? 'Copied Prompt! ✓' : 'Copy SDK Migration Prompt'"></span>
+                        </button>
+                      </div>
+                    </template>
+                  </td>
+
+                  <!-- 4. Environment & Secret Readiness -->
+                  <td class="py-3.5 px-3 align-top space-y-1.5">
+                    <div>
+                      <span 
+                        class="text-[10px] font-mono px-2 py-0.5 rounded-full border font-medium inline-block"
+                        :class="repo.telemetry?.secret_readiness?.is_ready ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-300 border-amber-500/30'"
+                        x-text="repo.telemetry?.secret_readiness?.status || 'No Secrets Needed'"
+                      ></span>
+                    </div>
+                    <!-- Missing keys badges -->
+                    <template x-if="repo.telemetry?.secret_readiness?.missing_keys?.length">
+                      <div class="space-y-0.5">
+                        <span class="text-[9px] text-slate-500 uppercase font-bold block">Missing in local .env:</span>
+                        <div class="flex flex-wrap gap-1">
+                          <template x-for="mk in repo.telemetry.secret_readiness.missing_keys" :key="mk">
+                            <button 
+                              @click="selectedSecretKey = mk" 
+                              class="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-950/40 text-amber-300 border border-amber-500/30 hover:border-amber-400 transition"
+                              title="Click to view all repos missing this secret"
+                              x-text="mk"
+                            ></button>
+                          </template>
+                        </div>
+                      </div>
+                    </template>
+                  </td>
+
+                  <!-- 5. Runtime & Port Topology -->
+                  <td class="py-3.5 px-3 align-top space-y-1.5">
+                    <div class="text-xs font-semibold text-slate-200" x-text="repo.telemetry?.runtime_topology?.execution_target || 'CLI Script'"></div>
+                    
+                    <!-- Port & Heartbeat pill -->
+                    <div class="flex items-center gap-2">
+                      <template x-if="repo.telemetry?.runtime_topology?.port">
+                        <span class="text-[10px] font-mono text-slate-400" x-text="`Port :${repo.telemetry.runtime_topology.port}`"></span>
+                      </template>
+                      <span 
+                        class="text-[9px] font-mono px-2 py-0.5 rounded-full border flex items-center gap-1 font-medium"
+                        :class="{
+                          'bg-emerald-500/10 text-emerald-400 border-emerald-500/30': repo.telemetry?.runtime_topology?.heartbeat === 'Online',
+                          'bg-slate-800 text-slate-400 border-slate-700': repo.telemetry?.runtime_topology?.heartbeat === 'Offline',
+                          'bg-slate-900 text-slate-500 border-slate-800': repo.telemetry?.runtime_topology?.heartbeat === 'N/A'
+                        }"
+                      >
+                        <span x-show="repo.telemetry?.runtime_topology?.heartbeat === 'Online'" class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span x-text="repo.telemetry?.runtime_topology?.heartbeat || 'Offline'"></span>
+                      </span>
+                    </div>
+                  </td>
+
+                  <!-- 6. Git & Local Drift -->
+                  <td class="py-3.5 px-3 align-top space-y-1.5">
+                    <div class="text-xs text-slate-300 flex items-center gap-1.5">
+                      <span class="text-slate-500 text-[10px]">Pushed:</span>
+                      <span class="font-mono text-[11px]" x-text="`${repo.telemetry?.git_drift?.days_since_commit || 0}d ago`"></span>
+                    </div>
+                    
+                    <!-- Dirty working tree -->
+                    <div>
+                      <span 
+                        class="text-[9px] font-mono px-1.5 py-0.2 rounded border"
+                        :class="repo.telemetry?.git_drift?.is_dirty ? 'bg-amber-500/10 text-amber-300 border-amber-500/30 font-medium' : 'bg-slate-900 text-slate-500 border-slate-800'"
+                        x-text="repo.telemetry?.git_drift?.is_dirty ? `Dirty (${repo.telemetry.git_drift.dirty_files_count} files)` : 'Working tree clean'"
+                      ></span>
+                    </div>
+
+                    <!-- Ahead / Behind -->
+                    <div class="text-[10px] font-mono text-slate-400" x-text="repo.telemetry?.git_drift?.drift_status || 'Synced'"></div>
+                  </td>
+
+                  <!-- 7. Engineering Maturity Score -->
+                  <td class="py-3.5 px-3 align-top space-y-1.5">
+                    <div class="flex items-center gap-2">
+                      <span 
+                        class="text-xs font-bold font-mono px-2 py-0.5 rounded"
+                        :class="{
+                          'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30': (repo.telemetry?.engineering_maturity?.score || 0) >= 80,
+                          'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30': (repo.telemetry?.engineering_maturity?.score || 0) >= 65 && (repo.telemetry?.engineering_maturity?.score || 0) < 80,
+                          'bg-amber-500/20 text-amber-300 border border-amber-500/30': (repo.telemetry?.engineering_maturity?.score || 0) < 65
+                        }"
+                        x-text="`${repo.telemetry?.engineering_maturity?.score || 0} (${repo.telemetry?.engineering_maturity?.grade || 'C'})`"
+                      ></span>
+                      <div class="w-12 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-indigo-500 h-1.5 rounded-full" :style="`width: ${repo.telemetry?.engineering_maturity?.score || 0}%`"></div>
+                      </div>
+                    </div>
+
+                    <!-- Pills for tests, ci, schema, agents -->
+                    <div class="flex flex-wrap gap-1 text-[8px] font-mono">
+                      <span :class="repo.telemetry?.engineering_maturity?.has_tests ? 'text-emerald-400' : 'text-slate-600'" x-text="repo.telemetry?.engineering_maturity?.has_tests ? 'Tests ✓' : 'No tests'"></span> &bull;
+                      <span :class="repo.telemetry?.engineering_maturity?.has_ci ? 'text-emerald-400' : 'text-slate-600'" x-text="repo.telemetry?.engineering_maturity?.has_ci ? 'CI ✓' : 'No CI'"></span> &bull;
+                      <span :class="repo.telemetry?.engineering_maturity?.has_schema_validation ? 'text-emerald-400' : 'text-slate-600'" x-text="repo.telemetry?.engineering_maturity?.has_schema_validation ? 'Schemas ✓' : 'No Schemas'"></span>
+                    </div>
+
+                    <!-- Agent Context action -->
+                    <template x-if="repo.telemetry?.engineering_maturity?.agent_readiness?.handoff_prompt">
+                      <div class="pt-0.5">
+                        <button 
+                          @click="copyPrompt(repo.telemetry.engineering_maturity.agent_readiness.handoff_prompt, `agent_${repo.id}`)"
+                          class="text-[9px] bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded transition"
+                          title="Generate AGENTS.md operating contract"
+                        >
+                          <span x-text="copiedId === `agent_${repo.id}` ? 'Copied Prompt! ✓' : '+ Add AGENTS.md'"></span>
+                        </button>
+                      </div>
+                    </template>
+                  </td>
+
+                  <!-- 8. Stage & Actions -->
+                  <td class="py-3.5 px-4 align-top text-right space-y-2">
+                    <select 
+                      @change="updateRepoStage(repo, $event.target.value)" 
+                      class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-indigo-500 w-full"
+                    >
+                      <template x-for="st in stages" :key="st">
+                        <option :value="st" :selected="st === repo.effective_stage" x-text="st"></option>
+                      </template>
+                    </select>
+
+                    <button 
+                      @click="openInspect(repo.id)" 
+                      class="text-xs bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1 ml-auto"
+                    >
+                      <span>Dashboard</span>
+                      <span>&rarr;</span>
+                    </button>
+                  </td>
+
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -1195,6 +1488,11 @@
         activeStageFilter: 'All',
         searchQuery: '',
         blockerFilter: 'all',
+        matrixGovernanceFilter: 'All',
+        matrixSecretFilter: 'All',
+        matrixDriftFilter: 'All',
+        selectedSecretKey: '',
+        allSecretKeys: [],
         
         stages: [
           'Ideation & Planning',
@@ -1243,9 +1541,24 @@
           await this.loadEnhancements();
           await this.loadBlockers();
           await this.loadIdeas();
+          await this.loadSecretKeys();
 
           // Refresh quota telemetry every 10 seconds
           setInterval(() => this.loadQuota(), 10000);
+        },
+
+        async loadSecretKeys() {
+          try {
+            const res = await fetch('/api/matrix/secret-lookup');
+            const data = await res.json();
+            this.allSecretKeys = data.all_secret_keys || [];
+          } catch (e) {
+            console.error('Failed to load secret keys', e);
+          }
+        },
+
+        clearSecretFilter() {
+          this.selectedSecretKey = '';
         },
 
         async loadProjects() {
@@ -1288,12 +1601,63 @@
           return this.repos.filter(r => {
             if (this.activeDomain !== 'All' && r.domain_tag !== this.activeDomain) return false;
             if (this.activeStageFilter !== 'All' && r.effective_stage !== this.activeStageFilter) return false;
+            
+            // Secret Blast-Radius Filter
+            if (this.selectedSecretKey) {
+              const sec = r.telemetry?.secret_readiness;
+              const hasReq = sec?.required_keys?.includes(this.selectedSecretKey);
+              const hasPres = sec?.present_keys?.includes(this.selectedSecretKey);
+              if (!hasReq && !hasPres) return false;
+            }
+
+            // Governance Posture Filter
+            if (this.matrixGovernanceFilter !== 'All') {
+              const gov = r.telemetry?.ai_linkage?.governance_posture || '';
+              const hasAlert = Boolean(r.telemetry?.ai_linkage?.governance_alert);
+              if (this.matrixGovernanceFilter === 'Alerts' && !hasAlert) return false;
+              if (this.matrixGovernanceFilter === 'Deterministic' && !gov.includes('Deterministic')) return false;
+              if (this.matrixGovernanceFilter === 'Free Tier' && !gov.includes('Free Tier')) return false;
+              if (this.matrixGovernanceFilter === 'Paid Commercial' && !gov.includes('Paid Commercial')) return false;
+            }
+
+            // Secret Readiness Filter
+            if (this.matrixSecretFilter !== 'All') {
+              const isReady = r.telemetry?.secret_readiness?.is_ready;
+              if (this.matrixSecretFilter === 'Ready' && !isReady) return false;
+              if (this.matrixSecretFilter === 'Missing' && isReady) return false;
+            }
+
+            // Git Drift Filter
+            if (this.matrixDriftFilter !== 'All') {
+              const drift = r.telemetry?.git_drift;
+              if (this.matrixDriftFilter === 'Dirty' && !drift?.is_dirty) return false;
+              if (this.matrixDriftFilter === 'Ahead' && !drift?.drift_status?.includes('Ahead')) return false;
+              if (this.matrixDriftFilter === 'Behind' && !drift?.drift_status?.includes('Behind')) return false;
+              if (this.matrixDriftFilter === 'Synced' && drift?.drift_status !== 'Synced with GitHub') return false;
+            }
+
             if (this.searchQuery) {
               const q = this.searchQuery.toLowerCase();
               return r.name.toLowerCase().includes(q) || (r.description && r.description.toLowerCase().includes(q));
             }
             return true;
           });
+        },
+
+        get totalOnlinePorts() {
+          return this.repos.filter(r => r.telemetry?.runtime_topology?.heartbeat === 'Online').length;
+        },
+        get totalMissingSecrets() {
+          return this.repos.filter(r => r.telemetry?.secret_readiness?.is_ready === false).length;
+        },
+        get totalDriftedRepos() {
+          return this.repos.filter(r => r.telemetry?.git_drift?.is_dirty || r.telemetry?.git_drift?.drift_status?.includes('Ahead')).length;
+        },
+        get totalGovernanceAlerts() {
+          return this.repos.filter(r => Boolean(r.telemetry?.ai_linkage?.governance_alert)).length;
+        },
+        get totalSdkDeprecations() {
+          return this.repos.filter(r => (r.telemetry?.sdk_currency?.deprecation_warnings?.length || 0) > 0).length;
         },
 
         getReposForStage(stage) {

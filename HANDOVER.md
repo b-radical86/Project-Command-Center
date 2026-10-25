@@ -1,18 +1,36 @@
 # HANDOVER.md — Session State & Agent Onboarding
 
 ## 1. Executive Summary
-- **Current System Status**: **STABLE & PRODUCTION READY (LOCAL)**
+- **Current System Status**: **STABLE & PRODUCTION READY (LOCAL) — v2.4.0**
 - **Latest Commits**: `d3ecf80` on branch `main` (`origin/main`)
 - **Git Remote**: `https://github.com/b-radical86/Project-Command-Center.git`
 - **Active Backend Server**: Running on `http://127.0.0.1:8000` via `./run.sh` (Background daemon task)
 - **Active AI Provider**: **OpenRouter** (Configured with free-tier waterfall: Nemotron 550B -> Nemotron 3.5 -> Inkling -> Nemotron 120B -> OpenRouter Free)
-- **Automated Test Suite**: 19/19 Pytest tests passing cleanly across db, parser, openrouter, local_scanner, and ideas.
+- **Automated Test Suite**: 23/23 Pytest tests passing cleanly across db, parser, openrouter, local_scanner, ideas, and telemetry_scanner.
 
 ---
 
 ## 2. Recent Accomplishments (Current Iteration)
 
-1. **Interactive Project Command Dashboard from Kanban Matrix**:
+1. **Comprehensive Portfolio & Telemetry Matrix (`currentView === 'table'`)**:
+   - Upgraded the basic table view into an enterprise operational matrix tracking 6 core telemetry dimensions across all repositories:
+     - **AI & External API Linkage**: Provider detection (`Google AI Studio`, `OpenAI`, `Anthropic`, `OpenRouter`, `Vertex AI`, `Local`), billing tier (`Free` vs `Paid`), and broker hooks (`Home Assistant`, `MQTT`, `Resend`, `Market Data`, `GitHub`).
+     - **Model & SDK Currency**: Detects exact packages (`google-genai` vs legacy `google-generativeai`, `openai v1+`), detects hardcoded model strings (`gemini-2.5-flash`, `gpt-4o`, `nemotron-3-ultra-550b`), and generates 1-click Antigravity SDK migration prompts.
+     - **Environment & Secret Readiness**: Compares required keys against present keys in `.env` (e.g. `4/4 Present` vs `Missing: MACRO_DB_PATH`) with strict zero-value leakage (only variable names are extracted, never values).
+     - **Runtime & Port Topology**: Identifies target stack (`FastAPI :8000`, `Streamlit :8501`, `Vite :5173`, `Docker`, `ESP32 Firmware`, `CLI`) and performs real-time localhost socket heartbeats (150ms timeout) reporting live `Online` / `Offline` status.
+     - **Git & Local Sync Drift**: Measures days since last commit, uncommitted local edits (dirty working tree count), and branch ahead/behind status.
+     - **Engineering Maturity Score**: Computes a 0–100 score and assigns grades (A+/A/B/C/D) evaluating automated unit tests, CI workflows, Pydantic/TypeScript validation, and `AGENTS.md`/`CLAUDE.md` context files.
+   - Built a top telemetry summary ribbon showing Total Projects, Live Online Ports, Fully Configured Secret Ratios, Local Git Drift count, Data Governance Warnings, and Deprecated SDK alerts.
+   - Added interactive matrix filters for Governance Posture, Secret Readiness, and Local Git Drift.
+
+2. **Deterministic AST & Manifest Scanner (`app/telemetry_scanner.py`)**:
+   - Decoupled code and manifest inspection from AI summarization with 100% offline regex, AST, and manifest parsing (< 30ms total runtime across 11 projects) requiring zero LLM tokens.
+   - Enforced Wealth Domain Data Residency: Automatically flags repositories tagged `Wealth` that connect to consumer free-tier AI APIs or have public visibility.
+
+3. **Secret Rotation Blast-Radius Lookup (`/api/matrix/secret-lookup`)**:
+   - Cross-repo lookup endpoint and reactive UI dropdown to instantly isolate all projects dependent on a specific secret (e.g. `OPENROUTER_API_KEY`, `GEMINI_API_KEY`, `GITHUB_TOKEN`) with an active filter reset banner.
+
+4. **Interactive Project Command Dashboard from Kanban Matrix**:
    - Enabled direct clickability across the entire Kanban project card to open a project-specific command dashboard.
    - Added active blocker badge directly to each Kanban card showing count of blockers for that project.
    - Guarded child controls (`@click.stop`) for external repository links, AI toggles, and stage dropdowns.

@@ -22,6 +22,7 @@ The **Project Command Center** is a unified developer dashboard that gives a mul
 | **FR-11** | **Historical Ideas Vault & Duplicate Checker** | Maintain historical project concepts with status/domain tracking and real-time lexical duplicate checking. | **Implemented** |
 | **FR-12** | **Dual-Layer Strategist Presentation** | Present AI suggestions with a plain-English, non-technical overview for rapid comprehension while maintaining detailed Antigravity copy prompts and technical architecture disclosure. | **Implemented** |
 | **FR-13** | **Interactive Project Command Dashboard** | Open a dedicated project command dashboard when clicking any project card on the Kanban matrix, displaying project-specific blockers, stage override, codebase telemetry, key milestones, and task checklists. | **Implemented** |
+| **FR-14** | **Portfolio & Per-Project Telemetry Matrix** | Comprehensive operational matrix tracking AI & External API linkage, Model/SDK currency, Secret readiness, Runtime port heartbeats, Git drift, and Engineering maturity scores (0-100) via deterministic AST/manifest scanning, with credential rotation blast-radius filtering and Wealth data residency governance enforcement. | **Implemented** |
 
 ---
 

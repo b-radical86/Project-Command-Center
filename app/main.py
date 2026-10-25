@@ -37,6 +37,7 @@ from app.ideas_service import (
 )
 from app.parser import process_harvested_docs, evaluate_project_status
 from app.local_scanner import scan_all_local_repositories
+from app.telemetry_scanner import scan_repo_telemetry
 from app.github_client import (
     fetch_all_repositories,
     fetch_repository_details
@@ -134,6 +135,19 @@ def list_projects(
                 "completed": action_counts["completed"] if action_counts else 0,
                 "pending": action_counts["pending"] if action_counts else 0,
             }
+
+            # Attach deterministic telemetry
+            if item.get("summary_data") and "telemetry" in item["summary_data"]:
+                item["telemetry"] = item["summary_data"]["telemetry"]
+            else:
+                item["telemetry"] = scan_repo_telemetry(
+                    item.get("local_path"),
+                    domain_tag=item.get("domain_tag", "General"),
+                    is_private=bool(item.get("is_private", 1)),
+                    fallback_files=item.get("summary_data", {}).get("root_files", []),
+                    fallback_docs=item.get("summary_data", {}).get("sanitized_docs", {})
+                )
+
             results.append(item)
 
         return results
@@ -160,6 +174,18 @@ def get_project_details(repo_id: int):
                 repo["summary_data"] = {}
         else:
             repo["summary_data"] = {}
+
+        # Attach telemetry
+        if repo.get("summary_data") and "telemetry" in repo["summary_data"]:
+            repo["telemetry"] = repo["summary_data"]["telemetry"]
+        else:
+            repo["telemetry"] = scan_repo_telemetry(
+                repo.get("local_path"),
+                domain_tag=repo.get("domain_tag", "General"),
+                is_private=bool(repo.get("is_private", 1)),
+                fallback_files=repo.get("summary_data", {}).get("root_files", []),
+                fallback_docs=repo.get("summary_data", {}).get("sanitized_docs", {})
+            )
 
         # Fetch action items
         action_rows = conn.execute("""
@@ -431,6 +457,72 @@ async def trigger_portfolio_brainstorm():
 
         conn.commit()
         return strategy.model_dump()
+    finally:
+        conn.close()
+
+
+@app.get("/api/matrix/secret-lookup")
+def get_secret_blast_radius(key_name: Optional[str] = None):
+    """
+    Cross-repository environment secret lookup table.
+    Enables developers to filter by secret name (e.g. GEMINI_API_KEY, GITHUB_TOKEN)
+    to immediately identify all repositories depending on it for zero-surprise rotation.
+    Never exposes secret values.
+    """
+    conn = get_connection()
+    try:
+        rows = conn.execute("SELECT id, name, name_with_owner, domain_tag, local_path, is_local, summary_json FROM repositories WHERE is_empty = 0").fetchall()
+        
+        all_keys: Set[str] = set()
+        repo_usage: List[Dict[str, Any]] = []
+
+        for r in rows:
+            rd = dict(r)
+            s_data = json.loads(rd.get("summary_json") or "{}")
+            telemetry = s_data.get("telemetry")
+            if not telemetry:
+                telemetry = scan_repo_telemetry(rd.get("local_path"), domain_tag=rd.get("domain_tag", "General"))
+            
+            s_ready = telemetry.get("secret_readiness", {})
+            req_keys = s_ready.get("required_keys", [])
+            pres_keys = s_ready.get("present_keys", [])
+            
+            for k in req_keys:
+                all_keys.add(k)
+            for k in pres_keys:
+                all_keys.add(k)
+
+            repo_usage.append({
+                "repo_id": rd["id"],
+                "name": rd["name"],
+                "name_with_owner": rd["name_with_owner"],
+                "domain_tag": rd["domain_tag"],
+                "required_keys": req_keys,
+                "present_keys": pres_keys,
+                "missing_keys": s_ready.get("missing_keys", []),
+            })
+
+        sorted_keys = sorted(list(all_keys))
+        
+        # If key_name specified, filter repos
+        filtered_repos = []
+        if key_name:
+            clean_key = key_name.strip()
+            for ru in repo_usage:
+                if clean_key in ru["required_keys"] or clean_key in ru["present_keys"]:
+                    filtered_repos.append({
+                        **ru,
+                        "is_required": clean_key in ru["required_keys"],
+                        "is_present": clean_key in ru["present_keys"],
+                        "is_missing": clean_key in ru["missing_keys"],
+                    })
+        
+        return {
+            "all_secret_keys": sorted_keys,
+            "queried_key": key_name,
+            "affected_repo_count": len(filtered_repos) if key_name else len(repo_usage),
+            "affected_repos": filtered_repos if key_name else repo_usage,
+        }
     finally:
         conn.close()
 
@@ -741,6 +833,14 @@ async def sync_stream(force: bool = False):
                         ai_enabled = existing_record["ai_enabled"]
                         override_stage = existing_record["override_stage"]
 
+                    telemetry = scan_repo_telemetry(
+                        repo_meta.get("local_path"),
+                        domain_tag=domain_tag,
+                        is_private=bool(repo_meta.get("is_private", True)),
+                        fallback_files=root_files,
+                        fallback_docs=processed["sanitized_docs"]
+                    )
+
                     summary_payload = {
                         "directories": directories,
                         "root_files": root_files,
@@ -750,6 +850,7 @@ async def sync_stream(force: bool = False):
                         "open_issues": open_issues,
                         "sanitized_docs": processed["sanitized_docs"],
                         "harvested_doc_count": len(processed["sanitized_docs"]),
+                        "telemetry": telemetry,
                     }
 
                     # Upsert repo into database

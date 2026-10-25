@@ -65,6 +65,7 @@ graph TD
   - `POST /api/ideas`: Captures new ideas with real-time duplicate checking.
   - `POST /api/ideas/check-duplicate`: Standalone duplicate comparison against historical database.
   - `PATCH /api/ideas/{idea_id}`: Updates idea status, revisit notes, or graduation link.
+  - `GET /api/matrix/secret-lookup`: Cross-repo environment variable name lookup table for credential rotation blast-radius analysis.
   - `GET /api/sync/stream`: Server-Sent Events (SSE) stream for real-time sync progression.
 
 ### 2.3 Secret Scrubbing & Document Sanitizer (`app/parser.py`)
@@ -78,6 +79,17 @@ Before any local markdown or code snippet is stored or transmitted to OpenRouter
 - **Waterfall Mechanics**: Iterates sequentially through `FREE_TIER_WATERFALL`. If any tier fails with 403, 404, 429, or JSON schema validation errors, the next tier is executed immediately.
 - **Reasoning Handling**: Automatically falls back to inspecting `message.reasoning` if the thinking model exhausts tokens before writing to `message.content`.
 - **Request Pacing**: Hard-pacing at 1.0s between outgoing calls to prevent bursts on free-tier gateways.
+
+### 2.5 Deterministic AST & Manifest Scanner (`app/telemetry_scanner.py`)
+- **Decoupled Architecture**: Runs entirely offline via deterministic regular expressions, AST import inspection, and file manifests (`pyproject.toml`, `requirements.txt`, `package.json`, `.env.example`, `.env`) with zero LLM token usage.
+- **Signals Extracted**:
+  - **AI & External API Linkage**: Detects provider (Google AI Studio, OpenAI, Anthropic, OpenRouter, Vertex AI, Local), billing tier (Free vs Paid), and hardware/service brokers (MQTT, Home Assistant, Resend, GitHub).
+  - **Model & SDK Currency**: Identifies installed packages (`google-genai` vs legacy `google-generativeai`, `openai v1+`), detects hardcoded model strings (`gemini-2.5-flash`, `gpt-4o`, `nemotron-3-ultra-550b`), and generates 1-click Antigravity migration prompts.
+  - **Environment & Secret Readiness**: Compares required keys against present keys in `.env` with strict zero-value leakage (only variable names are extracted, never values).
+  - **Runtime & Port Topology**: Identifies targets (FastAPI :8000, Streamlit :8501, Vite :5173, Docker, ESP32) and checks localhost port heartbeats with 150ms socket timeouts.
+  - **Git & Local Drift**: Measures days since last commit, dirty working tree file count, and unpushed branch divergence.
+  - **Engineering Maturity Score**: Computes a 0–100 score evaluating unit test presence, CI workflows, Pydantic/TypeScript validation, and `AGENTS.md`/`CLAUDE.md` context files.
+  - **Data Residency Governance**: Triggers high-priority warnings if a project tagged `Wealth` connects to a free-tier consumer AI API or has public repo visibility.
 
 ---
 
