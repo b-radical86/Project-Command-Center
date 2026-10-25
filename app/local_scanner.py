@@ -14,15 +14,30 @@ IGNORED_DIR_NAMES = {
 
 CODE_EXTENSIONS = {".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs", ".html", ".css", ".yaml", ".yml", ".json"}
 
-def get_projects_root_dir() -> str:
-    """Find the parent directory containing all local sibling projects."""
-    env_dir = os.environ.get("LOCAL_PROJECTS_DIR")
-    if env_dir and os.path.isdir(env_dir):
-        return os.path.abspath(env_dir)
-    # Default: parent of current Project Command Center directory
+def get_projects_root_dirs() -> List[str]:
+    """Find all configured local parent directories containing git repositories."""
+    dirs: List[str] = []
+    env_dir = os.environ.get("LOCAL_PROJECTS_DIR") or os.environ.get("LOCAL_PROJECT_PATHS")
+    if env_dir:
+        # Support comma or semicolon separated paths
+        parts = [p.strip() for p in re.split(r"[,;]", env_dir) if p.strip()]
+        for p in parts:
+            abs_p = os.path.abspath(os.path.expanduser(p))
+            if os.path.isdir(abs_p) and abs_p not in dirs:
+                dirs.append(abs_p)
+
+    # Always include parent directory of Project Command Center as default
     current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     parent_dir = os.path.dirname(current_dir)
-    return parent_dir
+    if os.path.isdir(parent_dir) and parent_dir not in dirs:
+        dirs.append(parent_dir)
+
+    return dirs
+
+def get_projects_root_dir() -> str:
+    """Backward compatibility wrapper returning the primary projects root directory."""
+    dirs = get_projects_root_dirs()
+    return dirs[0] if dirs else os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def scan_markdown_files(repo_path: str) -> Dict[str, str]:
     """Recursively harvest markdown documentation from root and /docs (up to 3 levels)."""
@@ -88,22 +103,29 @@ def count_code_and_test_files(repo_path: str) -> Dict[str, Any]:
     }
 
 def scan_all_local_repositories() -> List[Dict[str, Any]]:
-    """Scan local parent directory for all git repositories and extract rich technical telemetry."""
-    projects_dir = get_projects_root_dir()
-    current_repo_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    """Scan all configured local parent directories for git repositories and extract rich technical telemetry."""
+    projects_dirs = get_projects_root_dirs()
     results: List[Dict[str, Any]] = []
+    seen_paths: set = set()
+    seen_identifiers: set = set()
 
-    if not os.path.isdir(projects_dir):
-        logger.warning(f"Projects directory not found: {projects_dir}")
-        return results
-
-    for item in sorted(os.listdir(projects_dir)):
-        repo_path = os.path.join(projects_dir, item)
-        git_dir = os.path.join(repo_path, ".git")
-
-        # Skip non-directories or items without .git
-        if not os.path.isdir(repo_path) or not os.path.exists(git_dir):
+    for projects_dir in projects_dirs:
+        if not os.path.isdir(projects_dir):
+            logger.warning(f"Configured projects directory not found: {projects_dir}")
             continue
+
+        for item in sorted(os.listdir(projects_dir)):
+            repo_path = os.path.join(projects_dir, item)
+            git_dir = os.path.join(repo_path, ".git")
+
+            # Skip non-directories or items without .git
+            if not os.path.isdir(repo_path) or not os.path.exists(git_dir):
+                continue
+
+            real_path = os.path.realpath(repo_path)
+            if real_path in seen_paths:
+                continue
+            seen_paths.add(real_path)
 
         try:
             # 1. Remote URL & Repo Identifier
