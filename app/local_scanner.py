@@ -101,10 +101,8 @@ def scan_all_local_repositories() -> List[Dict[str, Any]]:
         repo_path = os.path.join(projects_dir, item)
         git_dir = os.path.join(repo_path, ".git")
 
-        # Skip non-directories, items without .git, or the Command Center itself
+        # Skip non-directories or items without .git
         if not os.path.isdir(repo_path) or not os.path.exists(git_dir):
-            continue
-        if os.path.abspath(repo_path) == os.path.abspath(current_repo_path):
             continue
 
         try:
