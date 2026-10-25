@@ -92,6 +92,10 @@
             <span>AI Studio</span>
             <span class="text-[10px] text-indigo-300">✦</span>
           </button>
+          <button @click="currentView = 'ideas'" :class="currentView === 'ideas' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'" class="px-3 py-1.5 rounded-md font-medium transition flex items-center gap-1.5">
+            <span>Ideas Vault</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30" x-text="ideas.length">0</span>
+          </button>
         </div>
 
         <!-- Sync Button -->
@@ -507,6 +511,126 @@
         </div>
       </div>
     </div>
+
+    <!-- VIEW 5: HISTORICAL PROJECT IDEAS VAULT -->
+    <div x-show="currentView === 'ideas'" x-cloak class="space-y-6">
+      <!-- Header Banner & Action Bar -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 to-indigo-950/40 p-5 rounded-2xl border border-slate-800">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            Historical Project Ideas Vault
+            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">Archived & Incubating</span>
+          </h2>
+          <p class="text-xs text-slate-400 max-w-2xl mt-1">
+            Maintain past project concepts that may not resonate today but could be valuable later. Includes real-time duplicate checking to prevent re-inventing past concepts.
+          </p>
+        </div>
+        <button 
+          @click="openNewIdeaModal()" 
+          class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-500/20 transition active:scale-95 whitespace-nowrap self-start md:self-auto"
+        >
+          <span>+ Capture New Idea</span>
+        </button>
+      </div>
+
+      <!-- Filters & Search Toolbar -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800 text-xs">
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <input 
+            type="text" 
+            x-model="ideaSearch" 
+            @input.debounce.300ms="loadIdeas()" 
+            placeholder="Search ideas by keyword or notes..." 
+            class="bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-full sm:w-64"
+          >
+          <select 
+            x-model="ideaDomainFilter" 
+            @change="loadIdeas()" 
+            class="bg-slate-950 border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+          >
+            <option value="">All Domains</option>
+            <option value="Wealth">Wealth</option>
+            <option value="Hobbies">Hobbies</option>
+            <option value="Work">Work</option>
+            <option value="Family">Family</option>
+            <option value="Hardware">Hardware</option>
+            <option value="General">General</option>
+          </select>
+        </div>
+
+        <!-- Status Filter Pills -->
+        <div class="flex items-center gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+          <button @click="ideaStatusFilter = ''; loadIdeas()" :class="ideaStatusFilter === '' ? 'bg-indigo-600 text-white' : 'bg-slate-800/80 text-slate-400 hover:text-white'" class="px-2.5 py-1 rounded-md text-[11px] font-medium transition">All</button>
+          <button @click="ideaStatusFilter = 'parked'; loadIdeas()" :class="ideaStatusFilter === 'parked' ? 'bg-amber-600 text-white' : 'bg-slate-800/80 text-slate-400 hover:text-white'" class="px-2.5 py-1 rounded-md text-[11px] font-medium transition">Parked</button>
+          <button @click="ideaStatusFilter = 'incubating'; loadIdeas()" :class="ideaStatusFilter === 'incubating' ? 'bg-blue-600 text-white' : 'bg-slate-800/80 text-slate-400 hover:text-white'" class="px-2.5 py-1 rounded-md text-[11px] font-medium transition">Incubating</button>
+          <button @click="ideaStatusFilter = 'under_review'; loadIdeas()" :class="ideaStatusFilter === 'under_review' ? 'bg-purple-600 text-white' : 'bg-slate-800/80 text-slate-400 hover:text-white'" class="px-2.5 py-1 rounded-md text-[11px] font-medium transition">Under Review</button>
+          <button @click="ideaStatusFilter = 'graduated_to_repo'; loadIdeas()" :class="ideaStatusFilter === 'graduated_to_repo' ? 'bg-emerald-600 text-white' : 'bg-slate-800/80 text-slate-400 hover:text-white'" class="px-2.5 py-1 rounded-md text-[11px] font-medium transition">Graduated</button>
+          <button @click="ideaStatusFilter = 'discarded'; loadIdeas()" :class="ideaStatusFilter === 'discarded' ? 'bg-rose-900 text-white' : 'bg-slate-800/80 text-slate-400 hover:text-white'" class="px-2.5 py-1 rounded-md text-[11px] font-medium transition">Discarded</button>
+        </div>
+      </div>
+
+      <!-- Ideas Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <template x-for="idea in ideas" :key="idea.id">
+          <div class="bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 rounded-xl p-5 flex flex-col justify-between space-y-4 transition shadow-sm">
+            <div class="space-y-3">
+              <!-- Top Badges & Status Dropdown -->
+              <div class="flex items-start justify-between gap-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border"
+                  :class="{
+                    'bg-amber-500/10 text-amber-300 border-amber-500/20': idea.status === 'parked',
+                    'bg-blue-500/10 text-blue-300 border-blue-500/20': idea.status === 'incubating',
+                    'bg-purple-500/10 text-purple-300 border-purple-500/20': idea.status === 'under_review',
+                    'bg-emerald-500/10 text-emerald-300 border-emerald-500/20': idea.status === 'graduated_to_repo',
+                    'bg-rose-500/10 text-rose-300 border-rose-500/20': idea.status === 'discarded',
+                  }"
+                  x-text="idea.status.replace('_', ' ')"
+                ></span>
+
+                <span class="text-[10px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 font-medium" x-text="idea.domain_tag"></span>
+              </div>
+
+              <!-- Title & Description -->
+              <div>
+                <h3 class="text-sm font-bold text-white tracking-tight" x-text="idea.title"></h3>
+                <p class="text-xs text-slate-300 mt-1.5 leading-relaxed" x-text="idea.description"></p>
+              </div>
+
+              <!-- Revisit Notes / Why Not Today -->
+              <div x-show="idea.notes" class="bg-slate-950/70 p-3 rounded-lg border border-slate-800/80 text-[11px] text-slate-400">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Context & Revisit Conditions:</span>
+                <p class="italic text-slate-300" x-text="idea.notes"></p>
+              </div>
+            </div>
+
+            <!-- Footer Controls -->
+            <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-xs gap-2">
+              <span class="text-[10px] text-slate-500" x-text="new Date(idea.created_at).toLocaleDateString()"></span>
+              
+              <select 
+                @change="updateIdeaStatus(idea.id, $event.target.value)" 
+                class="bg-slate-950 border border-slate-700/80 rounded px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-indigo-500"
+              >
+                <option value="parked" :selected="idea.status === 'parked'">Parked (Revisit Later)</option>
+                <option value="incubating" :selected="idea.status === 'incubating'">Incubating</option>
+                <option value="under_review" :selected="idea.status === 'under_review'">Under Review</option>
+                <option value="graduated_to_repo" :selected="idea.status === 'graduated_to_repo'">Graduated to Repo</option>
+                <option value="discarded" :selected="idea.status === 'discarded'">Discarded</option>
+              </select>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Empty State -->
+      <div x-show="ideas.length === 0" class="p-12 text-center text-slate-500 text-xs border border-dashed border-slate-800 rounded-2xl bg-slate-900/30">
+        <p class="text-sm font-medium text-slate-400">No historical ideas found in this view.</p>
+        <p class="text-xs text-slate-500 mt-1">Capture your first project concept to preserve ideas for future exploration.</p>
+        <button @click="openNewIdeaModal()" class="mt-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+          + Capture Idea
+        </button>
+      </div>
+    </div>
   </main>
 
   <!-- Slide-Over Inspection Drawer -->
@@ -680,6 +804,117 @@
     </div>
   </div>
 
+  <!-- Modal: Capture New Project Idea with Real-Time Duplicate Checking -->
+  <div x-show="ideaModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
+    <div @click="ideaModalOpen = false" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+      <div class="relative w-full max-w-xl rounded-2xl bg-slate-900 border border-slate-800 p-6 shadow-2xl space-y-4">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>💡 Capture Historical Project Idea</span>
+          </h3>
+          <button @click="ideaModalOpen = false" class="text-slate-400 hover:text-white text-lg">&times;</button>
+        </div>
+
+        <!-- Real-Time Duplicate Alert Banner -->
+        <div x-show="duplicateAlert.hasDuplicate" class="bg-amber-950/40 border border-amber-500/40 rounded-xl p-3.5 space-y-2 text-xs">
+          <div class="flex items-center gap-2 text-amber-300 font-bold">
+            <span>⚠️ Similar Historical Idea Found</span>
+            <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-500/30 text-[10px]" x-text="`${Math.round((duplicateAlert.topMatch?.similarity_score || 0) * 100)}% Match`"></span>
+          </div>
+          <p class="text-amber-200/90 text-[11px]">
+            You previously captured: <strong class="text-white" x-text="duplicateAlert.topMatch?.existing_idea?.title"></strong>
+          </p>
+          <p class="text-slate-300 text-[11px] italic" x-text="duplicateAlert.topMatch?.existing_idea?.description"></p>
+          <div x-show="duplicateAlert.topMatch?.existing_idea?.notes" class="text-[10px] text-amber-300/80">
+            Past Notes: <span x-text="duplicateAlert.topMatch?.existing_idea?.notes"></span>
+          </div>
+        </div>
+
+        <!-- Form Inputs -->
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="block font-medium text-slate-300 mb-1">Project Concept Title *</label>
+            <input 
+              type="text" 
+              x-model="newIdea.title" 
+              @input.debounce.350ms="checkIdeaDuplicate()"
+              placeholder="e.g. Autonomous Night Sky Cloud Sensor" 
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            >
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-medium text-slate-300 mb-1">Domain</label>
+              <select x-model="newIdea.domain_tag" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+                <option value="General">General</option>
+                <option value="Wealth">Wealth</option>
+                <option value="Hobbies">Hobbies</option>
+                <option value="Work">Work</option>
+                <option value="Family">Family</option>
+                <option value="Hardware">Hardware</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-medium text-slate-300 mb-1">Initial Status</label>
+              <select x-model="newIdea.status" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+                <option value="parked">Parked (Revisit Later)</option>
+                <option value="incubating">Incubating</option>
+                <option value="under_review">Under Review</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-medium text-slate-300 mb-1">Concept Description *</label>
+            <textarea 
+              x-model="newIdea.description" 
+              @input.debounce.350ms="checkIdeaDuplicate()"
+              rows="3" 
+              placeholder="What problem does it solve? What is the core technical architecture?" 
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            ></textarea>
+          </div>
+
+          <div>
+            <label class="block font-medium text-slate-300 mb-1">Context / Why It Doesn't Resonate Today (Optional)</label>
+            <textarea 
+              x-model="newIdea.notes" 
+              rows="2" 
+              placeholder="Why park this today? e.g. Requires expensive camera hardware, high interest rates, re-evaluate when capital is available..." 
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
+          <button @click="ideaModalOpen = false" class="px-4 py-2 rounded-lg text-slate-400 hover:text-white text-xs">
+            Cancel
+          </button>
+          
+          <button 
+            x-show="duplicateAlert.hasDuplicate"
+            @click="submitNewIdea(true)" 
+            class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition"
+          >
+            Save Anyway (Force)
+          </button>
+
+          <button 
+            @click="submitNewIdea(false)" 
+            :disabled="!newIdea.title.trim() || !newIdea.description.trim() || isSavingIdea"
+            class="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded-lg transition"
+          >
+            <span x-text="isSavingIdea ? 'Saving...' : 'Save Idea to Vault'"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     function dashboardApp() {
       return {
@@ -700,7 +935,24 @@
         repos: [],
         enhancements: [],
         blockers: [],
-        quota: { provider: 'OpenRouter', model: 'anthropic/claude-3.5-sonnet', rpm: 0, rpm_limit: 60, rpd: 0, rpd_limit: 10000, total_tokens: 0 },
+        ideas: [],
+        ideaModalOpen: false,
+        isSavingIdea: false,
+        ideaSearch: '',
+        ideaStatusFilter: '',
+        ideaDomainFilter: '',
+        newIdea: {
+          title: '',
+          description: '',
+          domain_tag: 'General',
+          status: 'parked',
+          notes: ''
+        },
+        duplicateAlert: {
+          hasDuplicate: false,
+          topMatch: null
+        },
+        quota: { provider: 'OpenRouter', model: 'nvidia/nemotron-3-ultra-550b-a55b:free', rpm: 0, rpm_limit: 60, rpd: 0, rpd_limit: 10000, total_tokens: 0 },
 
         isSyncing: false,
         syncStatus: { active: false, message: '' },
@@ -718,6 +970,7 @@
           await this.loadQuota();
           await this.loadEnhancements();
           await this.loadBlockers();
+          await this.loadIdeas();
 
           // Refresh quota telemetry every 10 seconds
           setInterval(() => this.loadQuota(), 10000);
@@ -977,6 +1230,106 @@
             setTimeout(() => { this.copiedId = null; }, 2500);
           } catch (e) {
             console.error('Failed to copy', e);
+          }
+        },
+
+        openNewIdeaModal() {
+          this.newIdea = {
+            title: '',
+            description: '',
+            domain_tag: 'General',
+            status: 'parked',
+            notes: ''
+          };
+          this.duplicateAlert = { hasDuplicate: false, topMatch: null };
+          this.ideaModalOpen = true;
+        },
+
+        async loadIdeas() {
+          try {
+            const params = new URLSearchParams();
+            if (this.ideaStatusFilter) params.append('status', this.ideaStatusFilter);
+            if (this.ideaDomainFilter) params.append('domain', this.ideaDomainFilter);
+            if (this.ideaSearch) params.append('search', this.ideaSearch);
+            
+            const query = params.toString() ? `?${params.toString()}` : '';
+            const res = await fetch(`/api/ideas${query}`);
+            this.ideas = await res.json();
+          } catch (e) {
+            console.error('Failed to load ideas', e);
+          }
+        },
+
+        async checkIdeaDuplicate() {
+          const t = (this.newIdea.title || '').trim();
+          const d = (this.newIdea.description || '').trim();
+          if (t.length < 4 && d.length < 10) {
+            this.duplicateAlert = { hasDuplicate: false, topMatch: null };
+            return;
+          }
+          try {
+            const res = await fetch('/api/ideas/check-duplicate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ title: t, description: d, threshold: 0.55 })
+            });
+            const data = await res.json();
+            if (data.has_duplicates && data.matches.length > 0) {
+              this.duplicateAlert = {
+                hasDuplicate: true,
+                topMatch: data.matches[0]
+              };
+            } else {
+              this.duplicateAlert = { hasDuplicate: false, topMatch: null };
+            }
+          } catch (e) {
+            console.error('Failed to check duplicate', e);
+          }
+        },
+
+        async submitNewIdea(force = false) {
+          if (!this.newIdea.title.trim() || !this.newIdea.description.trim()) return;
+          this.isSavingIdea = true;
+          try {
+            const res = await fetch('/api/ideas', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: this.newIdea.title,
+                description: this.newIdea.description,
+                domain_tag: this.newIdea.domain_tag,
+                status: this.newIdea.status,
+                notes: this.newIdea.notes,
+                force: force
+              })
+            });
+            const result = await res.json();
+            if (!result.created && result.reason === 'duplicate_found') {
+              this.duplicateAlert = {
+                hasDuplicate: true,
+                topMatch: result.duplicate_match
+              };
+              return;
+            }
+            this.ideaModalOpen = false;
+            await this.loadIdeas();
+          } catch (e) {
+            console.error('Failed to save idea', e);
+          } finally {
+            this.isSavingIdea = false;
+          }
+        },
+
+        async updateIdeaStatus(ideaId, status) {
+          try {
+            await fetch(`/api/ideas/${ideaId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status })
+            });
+            await this.loadIdeas();
+          } catch (e) {
+            console.error('Failed to update idea status', e);
           }
         }
       }

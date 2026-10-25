@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [2.1.0] - 2026-10-25
 
 ### Added
+- **Historical Project Ideas Vault & Duplicate Detection**:
+  - Added SQLite `project_ideas` table tracking status (`parked`, `incubating`, `under_review`, `graduated_to_repo`, `discarded`), domain tags, and revisit context notes.
+  - Implemented `app/ideas_service.py` with custom domain stemmer and Jaccard + string similarity algorithm to block or warn on duplicate ideas.
+  - Added REST endpoints: `GET /api/ideas`, `POST /api/ideas`, `POST /api/ideas/check-duplicate`, `PATCH /api/ideas/{id}`.
+  - Added "Ideas Vault" view and modal with real-time duplicate warning banner in `app/static/index.html`.
+  - Added unit test suite `tests/test_ideas.py`.
 - **Multi-Root Local Workspace Discovery (`LOCAL_PROJECTS_DIR`)**:
   - Enhanced `app/local_scanner.py` with `get_projects_root_dirs()` supporting comma-separated custom paths and canonical path deduplication.
   - Added unit test suite `tests/test_local_scanner.py`.

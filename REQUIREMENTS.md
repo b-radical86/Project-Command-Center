@@ -19,6 +19,7 @@ The **Project Command Center** is a unified developer dashboard that gives a mul
 | **FR-08** | **Unified Blocker Queue** | Aggregate unresolved issues and blocker action items across all projects in a dedicated radar view. | **Implemented** |
 | **FR-09** | **Copy-Ready Antigravity Prompts** | Generate self-contained, copy-ready AI instructions for quick wins (< 2 hrs) and next milestones. | **Implemented** |
 | **FR-10** | **Per-Repository AI Toggle** | Allow developers to toggle AI analysis on or off per repository to protect sensitive proprietary projects. | **Implemented** |
+| **FR-11** | **Historical Ideas Vault & Duplicate Checker** | Maintain historical project concepts with status/domain tracking and real-time lexical duplicate checking. | **Implemented** |
 
 ---
 

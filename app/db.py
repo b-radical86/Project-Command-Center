@@ -100,6 +100,25 @@ def init_db():
     );
     """)
 
+    # 5. Historical project ideas table with deduplication metadata
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS project_ideas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        domain_tag TEXT DEFAULT 'General',
+        source TEXT DEFAULT 'user', -- 'user', 'ai_brainstorm', 'portfolio_synergy', 'market_trend'
+        status TEXT DEFAULT 'parked', -- 'parked', 'under_review', 'incubating', 'graduated_to_repo', 'discarded'
+        tags TEXT DEFAULT '[]', -- JSON array of tags
+        similarity_keywords TEXT, -- Normalized token set for rapid lexical deduplication
+        notes TEXT, -- Notes on why it does not resonate today or conditions under which to revisit
+        graduated_repo_id INTEGER, -- Optional link to active repo if materialized
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(graduated_repo_id) REFERENCES repositories(id) ON DELETE SET NULL
+    );
+    """)
+
     conn.commit()
     conn.close()
 

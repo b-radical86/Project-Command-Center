@@ -81,3 +81,24 @@ class ActionItemUpdateSchema(BaseModel):
 
 class EnhancementStatusUpdateSchema(BaseModel):
     status: str # 'suggested', 'accepted', 'completed', 'dismissed'
+
+class IdeaCreateSchema(BaseModel):
+    title: str
+    description: str
+    domain_tag: Optional[str] = "General"
+    source: Optional[str] = "user"
+    status: Optional[str] = "parked"
+    notes: Optional[str] = None
+    tags: Optional[List[str]] = None
+    force: bool = False
+
+class IdeaCheckDuplicateSchema(BaseModel):
+    title: str
+    description: str
+    threshold: Optional[float] = 0.55
+
+class IdeaUpdateSchema(BaseModel):
+    status: Optional[str] = None
+    notes: Optional[str] = None
+    domain_tag: Optional[str] = None
+    graduated_repo_id: Optional[int] = None

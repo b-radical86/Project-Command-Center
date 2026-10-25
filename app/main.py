@@ -24,7 +24,16 @@ from app.schemas import (
     ProjectUpdateSchema,
     ActionItemUpdateSchema,
     EnhancementStatusUpdateSchema,
-    CanonicalStage
+    CanonicalStage,
+    IdeaCreateSchema,
+    IdeaCheckDuplicateSchema,
+    IdeaUpdateSchema,
+)
+from app.ideas_service import (
+    list_project_ideas,
+    save_project_idea,
+    find_duplicate_ideas,
+    update_project_idea,
 )
 from app.parser import process_harvested_docs, evaluate_project_status
 from app.local_scanner import scan_all_local_repositories
@@ -421,6 +430,76 @@ async def trigger_portfolio_brainstorm():
 def get_quota():
     """Live Free Tier quota metrics."""
     return get_quota_telemetry()
+
+
+# ---------------------------------------------------------
+# Historical Project Ideas & Duplicate Checker Routes
+# ---------------------------------------------------------
+
+@app.get("/api/ideas")
+def get_historical_ideas(
+    status: Optional[str] = Query(None, description="Filter by status ('parked', 'under_review', 'incubating', 'graduated_to_repo', 'discarded')"),
+    domain: Optional[str] = Query(None, description="Filter by domain tag"),
+    search: Optional[str] = Query(None, description="Keyword search term"),
+):
+    """Retrieve historical project ideas with optional filtering."""
+    return list_project_ideas(status=status, domain=domain, search=search)
+
+
+@app.post("/api/ideas")
+def create_idea(payload: IdeaCreateSchema):
+    """
+    Save a new project idea with automatic duplicate checking.
+    If a high similarity match is found and force=False, returns duplicate alert without creating.
+    """
+    try:
+        result = save_project_idea(
+            title=payload.title,
+            description=payload.description,
+            domain_tag=payload.domain_tag or "General",
+            source=payload.source or "user",
+            status=payload.status or "parked",
+            notes=payload.notes,
+            tags=payload.tags,
+            force=payload.force
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/ideas/check-duplicate")
+def check_duplicate(payload: IdeaCheckDuplicateSchema):
+    """
+    Compare idea title and description against historical database
+    and return match scores and similar past ideas without creating.
+    """
+    matches = find_duplicate_ideas(
+        title=payload.title,
+        description=payload.description,
+        threshold=payload.threshold or 0.55
+    )
+    return {
+        "has_duplicates": len(matches) > 0,
+        "match_count": len(matches),
+        "highest_similarity": matches[0]["similarity_score"] if matches else 0.0,
+        "matches": matches
+    }
+
+
+@app.patch("/api/ideas/{idea_id}")
+def update_idea(idea_id: int, payload: IdeaUpdateSchema):
+    """Update status, notes, or graduation link for a historical idea."""
+    updated = update_project_idea(
+        idea_id=idea_id,
+        status=payload.status,
+        notes=payload.notes,
+        domain_tag=payload.domain_tag,
+        graduated_repo_id=payload.graduated_repo_id
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    return updated
 
 
 # ---------------------------------------------------------

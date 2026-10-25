@@ -6,13 +6,20 @@
 - **Git Remote**: `https://github.com/b-radical86/Project-Command-Center.git`
 - **Active Backend Server**: Running on `http://127.0.0.1:8000` via `./run.sh` (Background daemon task)
 - **Active AI Provider**: **OpenRouter** (Configured with free-tier waterfall: Nemotron 550B -> Nemotron 3.5 -> Inkling -> Nemotron 120B -> OpenRouter Free)
-- **Automated Test Suite**: 14/14 Pytest tests passing cleanly across db, parser, openrouter, and local_scanner.
+- **Automated Test Suite**: 18/18 Pytest tests passing cleanly across db, parser, openrouter, local_scanner, and ideas.
 
 ---
 
 ## 2. Recent Accomplishments (Current Iteration)
 
-1. **Formalized Pytest Automated Test Suite (`tests/`)**:
+1. **Historical Project Ideas Vault & Deduplication Engine**:
+   - Added `project_ideas` database table in SQLite to track concepts, domain tags, statuses (`parked`, `incubating`, `under_review`, `graduated_to_repo`, `discarded`), and revisit conditions.
+   - Built `app/ideas_service.py` with custom stemming and composite similarity scoring (Jaccard token overlap + Levenshtein character ratio) to catch duplicate concepts and rephrasings.
+   - Added REST API routes (`GET /api/ideas`, `POST /api/ideas`, `POST /api/ideas/check-duplicate`, `PATCH /api/ideas/{id}`).
+   - Added dedicated "Ideas Vault" tab in `app/static/index.html` with real-time duplicate warning alert banner.
+   - Authored test suite `tests/test_ideas.py` covering deduplication, status filtering, and keyword search.
+
+2. **Formalized Pytest Automated Test Suite (`tests/`)**:
    - Added `pytest>=8.0.0` to `requirements.txt`.
    - Scaffolded `tests/test_parser.py`, `tests/test_db.py`, `tests/test_openrouter.py`, and `tests/test_local_scanner.py`.
    - 100% test pass rate (14 tests passed in < 2s).

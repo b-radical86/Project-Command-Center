@@ -61,6 +61,10 @@ graph TD
   - `POST /api/ideate/repo/{repo_id}`: Triggers single-repo deep dive and Antigravity prompt generation.
   - `POST /api/ideate/portfolio`: Triggers portfolio-wide strategic cross-cutting analysis.
   - `GET /api/quota`: Real-time OpenRouter token and rate-limiting telemetry.
+  - `GET /api/ideas`: Retrieves historical project ideas with status/domain/keyword filters.
+  - `POST /api/ideas`: Captures new ideas with real-time duplicate checking.
+  - `POST /api/ideas/check-duplicate`: Standalone duplicate comparison against historical database.
+  - `PATCH /api/ideas/{idea_id}`: Updates idea status, revisit notes, or graduation link.
   - `GET /api/sync/stream`: Server-Sent Events (SSE) stream for real-time sync progression.
 
 ### 2.3 Secret Scrubbing & Document Sanitizer (`app/parser.py`)
@@ -136,3 +140,17 @@ SQLite 3 configured with Write-Ahead Logging (`WAL` mode) and `PRAGMA synchronou
    - `candidates_tokens`: INTEGER
    - `status`: TEXT
    - `timestamp`: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+5. **`project_ideas`**:
+   - `id`: INTEGER PRIMARY KEY AUTOINCREMENT
+   - `title`: TEXT NOT NULL
+   - `description`: TEXT NOT NULL
+   - `domain_tag`: TEXT DEFAULT 'General'
+   - `source`: TEXT DEFAULT 'user'
+   - `status`: TEXT DEFAULT 'parked' ('parked', 'under_review', 'incubating', 'graduated_to_repo', 'discarded')
+   - `tags`: TEXT (JSON array)
+   - `similarity_keywords`: TEXT (Stemmed token index)
+   - `notes`: TEXT (Context on why not today or conditions to revisit)
+   - `graduated_repo_id`: INTEGER REFERENCES repositories(id)
+   - `created_at`: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+   - `updated_at`: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
