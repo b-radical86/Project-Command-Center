@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Command Center — GitHub & Gemini AI Studio</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    [x-cloak] { display: none !important; }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased" x-data="dashboardApp()" x-init="init()">
+
+  <!-- Top Navbar -->
+  <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur border-b border-slate-800 px-6 py-3.5">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <!-- Title & Branding -->
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold text-lg">
+          ⚡
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            Project Command Center
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v2.0</span>
+          </h1>
+          <p class="text-xs text-slate-400">GitHub Discovery & Gemini AI Studio Free-Tier Strategist</p>
+        </div>
+      </div>
+
+      <!-- Live Free-Tier Quota Telemetry -->
+      <div class="hidden lg:flex items-center gap-4 bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-1.5 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full" :class="quota.rpm < 12 ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span>
+          <span class="text-slate-400">RPM:</span>
+          <span class="font-mono font-semibold" :class="quota.rpm > 12 ? 'text-amber-400' : 'text-slate-200'" x-text="`${quota.rpm} / ${quota.rpm_limit}`">0 / 15</span>
+        </div>
+        <div class="h-3 w-px bg-slate-800"></div>
+        <div class="flex items-center gap-2">
+          <span class="text-slate-400">RPD:</span>
+          <span class="font-mono font-semibold text-slate-200" x-text="`${quota.rpd} / ${quota.rpd_limit}`">0 / 1500</span>
+        </div>
+        <div class="h-3 w-px bg-slate-800"></div>
+        <div class="flex items-center gap-1.5">
+          <span class="text-slate-400">Paced:</span>
+          <span class="text-emerald-400 font-medium">4.0s interval</span>
+        </div>
+      </div>
+
+      <!-- Action & View Controls -->
+      <div class="flex items-center gap-3">
+        <!-- View Tabs -->
+        <div class="flex bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/60 text-xs">
+          <button @click="currentView = 'kanban'" :class="currentView === 'kanban' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'" class="px-3 py-1.5 rounded-md font-medium transition">Kanban</button>
+          <button @click="currentView = 'table'" :class="currentView === 'table' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'" class="px-3 py-1.5 rounded-md font-medium transition">List</button>
+          <button @click="currentView = 'blockers'" :class="currentView === 'blockers' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'" class="px-3 py-1.5 rounded-md font-medium transition flex items-center gap-1">
+            Blockers
+            <span x-show="totalPendingBlockers > 0" class="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30" x-text="totalPendingBlockers"></span>
+          </button>
+          <button @click="currentView = 'studio'" :class="currentView === 'studio' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'" class="px-3 py-1.5 rounded-md font-medium transition flex items-center gap-1">
+            <span>AI Studio</span>
+            <span class="text-[10px] text-indigo-300">✦</span>
+          </button>
+        </div>
+
+        <!-- Sync Button -->
+        <button 
+          @click="startSync()" 
+          :disabled="isSyncing"
+          class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-md shadow-indigo-500/20 transition active:scale-95"
+        >
+          <svg :class="{'animate-spin': isSyncing}" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          <span x-text="isSyncing ? 'Syncing...' : 'Sync GitHub'"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sync Status Banner / Stream Progress -->
+  <div x-show="syncStatus.active" x-cloak class="bg-indigo-950/60 border-b border-indigo-500/30 px-6 py-2.5 text-xs text-indigo-200 transition-all">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <span class="relative flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
+        </span>
+        <span class="font-medium" x-text="syncStatus.message">Synchronizing with GitHub...</span>
+      </div>
+      <button @click="syncStatus.active = false" class="text-indigo-400 hover:text-white">&times;</button>
+    </div>
+  </div>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+
+    <!-- Filter & Search Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
+      <!-- Domain Tabs -->
+      <div class="flex items-center gap-1.5 overflow-x-auto text-xs">
+        <span class="text-slate-400 mr-1 text-[11px] font-semibold uppercase tracking-wider">Domain:</span>
+        <template x-for="d in ['All', 'General', 'Family', 'Wealth', 'Hobbies', 'Hardware']" :key="d">
+          <button 
+            @click="activeDomain = d" 
+            :class="activeDomain === d ? 'bg-slate-800 text-white font-semibold border-slate-700' : 'text-slate-400 hover:text-slate-200 border-transparent'" 
+            class="px-3 py-1 rounded-lg border transition"
+            x-text="d"
+          ></button>
+        </template>
+      </div>
+
+      <!-- Search & Stage Filter -->
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <input 
+            type="text" 
+            x-model="searchQuery" 
+            placeholder="Search projects..." 
+            class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 pl-8 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-56"
+          >
+          <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+
+        <select 
+          x-model="activeStageFilter" 
+          class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+        >
+          <option value="All">All Stages</option>
+          <template x-for="stg in stages" :key="stg">
+            <option :value="stg" x-text="stg"></option>
+          </template>
+        </select>
+      </div>
+    </div>
+
+    <!-- VIEW 1: KANBAN BOARD -->
+    <div x-show="currentView === 'kanban'" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-start">
+      <template x-for="stage in stages" :key="stage">
+        <div class="bg-slate-900/50 rounded-xl border border-slate-800/80 p-3 flex flex-col min-h-[500px]">
+          <!-- Column Header -->
+          <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full" :class="stageColor(stage)"></span>
+              <h2 class="text-xs font-bold text-slate-200 uppercase tracking-wider" x-text="stage"></h2>
+            </div>
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400" x-text="getReposForStage(stage).length"></span>
+          </div>
+
+          <!-- Cards List -->
+          <div class="space-y-3 flex-1 overflow-y-auto max-h-[calc(100vh-280px)] pr-1">
+            <template x-for="repo in getReposForStage(stage)" :key="repo.id">
+              <div class="bg-slate-950/80 hover:bg-slate-900 rounded-lg border border-slate-800/90 p-3.5 space-y-3 transition shadow-sm hover:border-slate-700">
+                <!-- Repo Name & Links -->
+                <div class="flex items-start justify-between gap-2">
+                  <div class="space-y-0.5">
+                    <a :href="repo.html_url" target="_blank" class="font-semibold text-xs text-slate-100 hover:text-indigo-400 transition flex items-center gap-1.5">
+                      <span x-text="repo.name"></span>
+                      <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                      </svg>
+                    </a>
+                    <p class="text-[11px] text-slate-400 line-clamp-2" x-text="repo.description || 'No description provided'"></p>
+                  </div>
+                  <!-- Domain Tag Badge -->
+                  <span class="text-[10px] px-2 py-0.5 rounded-full font-medium bg-slate-800 text-slate-300 border border-slate-700 shrink-0" x-text="repo.domain_tag"></span>
+                </div>
+
+                <!-- Progress Bar & Completion -->
+                <div class="space-y-1">
+                  <div class="flex justify-between text-[10px] text-slate-400 font-medium">
+                    <span>Progress</span>
+                    <span x-text="`${repo.completion_pct}%`">0%</span>
+                  </div>
+                  <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-500" :style="`width: ${repo.completion_pct}%`"></div>
+                  </div>
+                </div>
+
+                <!-- Metrics & Privacy Badges -->
+                <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-900">
+                  <div class="flex items-center gap-2 text-slate-400">
+                    <span title="Open Issues" class="flex items-center gap-1">
+                      <svg class="w-3 h-3 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                      <span x-text="repo.open_issues_count">0</span>
+                    </span>
+                    <span title="Action Items" class="flex items-center gap-1">
+                      <svg class="w-3 h-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                      <span x-text="repo.action_counts ? `${repo.action_counts.completed}/${repo.action_counts.total}` : '0/0'"></span>
+                    </span>
+                  </div>
+
+                  <!-- AI Toggle -->
+                  <button 
+                    @click="toggleRepoAI(repo)" 
+                    class="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded transition"
+                    :class="repo.ai_enabled ? 'bg-indigo-950/80 text-indigo-300 border border-indigo-800/60' : 'bg-slate-900 text-slate-500 border border-slate-800'"
+                    :title="repo.ai_enabled ? 'AI Enabled: Gemini scans sanitized docs' : 'Deterministic Mode: Secrets/Client code protected from AI'"
+                  >
+                    <span x-text="repo.ai_enabled ? 'AI On' : 'AI Off'"></span>
+                  </button>
+                </div>
+
+                <!-- Footer Card Controls -->
+                <div class="flex items-center justify-between pt-1 gap-2">
+                  <!-- Quick Stage Override Select -->
+                  <select 
+                    @change="updateRepoStage(repo, $event.target.value)" 
+                    class="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[10px] text-slate-300 focus:outline-none focus:border-indigo-500"
+                  >
+                    <template x-for="st in stages" :key="st">
+                      <option :value="st" :selected="st === repo.effective_stage" x-text="st"></option>
+                    </template>
+                  </select>
+
+                  <!-- Inspect Drawer Trigger -->
+                  <button 
+                    @click="openInspect(repo.id)" 
+                    class="text-[10px] font-semibold text-indigo-400 hover:text-indigo-300 px-2 py-1 rounded bg-indigo-500/10 hover:bg-indigo-500/20 transition"
+                  >
+                    Inspect &rarr;
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- VIEW 2: LIST / TABLE VIEW -->
+    <div x-show="currentView === 'table'" class="bg-slate-900/60 rounded-xl border border-slate-800 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+            <tr>
+              <th class="py-3 px-4">Repository</th>
+              <th class="py-3 px-3">Domain</th>
+              <th class="py-3 px-3">Stage</th>
+              <th class="py-3 px-3">Completion</th>
+              <th class="py-3 px-3">Checklists</th>
+              <th class="py-3 px-3">Issues</th>
+              <th class="py-3 px-3">AI Mode</th>
+              <th class="py-3 px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60">
+            <template x-for="repo in filteredRepos" :key="repo.id">
+              <tr class="hover:bg-slate-800/30 transition">
+                <td class="py-3 px-4">
+                  <div class="font-semibold text-slate-100" x-text="repo.name"></div>
+                  <div class="text-[11px] text-slate-500" x-text="repo.name_with_owner"></div>
+                </td>
+                <td class="py-3 px-3">
+                  <select 
+                    @change="updateRepoDomain(repo, $event.target.value)" 
+                    class="bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-xs text-slate-300"
+                  >
+                    <template x-for="d in ['General', 'Family', 'Wealth', 'Hobbies', 'Hardware']" :key="d">
+                      <option :value="d" :selected="d === repo.domain_tag" x-text="d"></option>
+                    </template>
+                  </select>
+                </td>
+                <td class="py-3 px-3">
+                  <span class="px-2 py-0.5 rounded text-[11px] font-medium" :class="stageBadgeClass(repo.effective_stage)" x-text="repo.effective_stage"></span>
+                </td>
+                <td class="py-3 px-3">
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-[11px]" x-text="`${repo.completion_pct}%`"></span>
+                    <div class="w-16 bg-slate-800 h-1 rounded-full overflow-hidden">
+                      <div class="bg-indigo-500 h-1 rounded-full" :style="`width: ${repo.completion_pct}%`"></div>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3 px-3 font-mono text-slate-400" x-text="repo.action_counts ? `${repo.action_counts.completed}/${repo.action_counts.total}` : '0/0'"></td>
+                <td class="py-3 px-3 font-mono text-slate-400" x-text="repo.open_issues_count"></td>
+                <td class="py-3 px-3">
+                  <button 
+                    @click="toggleRepoAI(repo)" 
+                    class="text-[10px] px-2 py-0.5 rounded border"
+                    :class="repo.ai_enabled ? 'bg-indigo-950 text-indigo-300 border-indigo-700' : 'bg-slate-900 text-slate-500 border-slate-800'"
+                    x-text="repo.ai_enabled ? 'Enabled' : 'Deterministic'"
+                  ></button>
+                </td>
+                <td class="py-3 px-4 text-right">
+                  <button @click="openInspect(repo.id)" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">Inspect &rarr;</button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VIEW 3: UNIFIED BLOCKER QUEUE -->
+    <div x-show="currentView === 'blockers'" class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold text-white">Unified Blocker & Action Queue</h2>
+          <p class="text-xs text-slate-400">Aggregated checklist items, GitHub issues, and AI-detected architectural roadblocks.</p>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          <button @click="blockerFilter = 'all'" :class="blockerFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400'" class="px-3 py-1 rounded-lg border border-slate-800">All Items</button>
+          <button @click="blockerFilter = 'pending'" :class="blockerFilter === 'pending' ? 'bg-slate-800 text-white' : 'text-slate-400'" class="px-3 py-1 rounded-lg border border-slate-800">Pending Only</button>
+          <button @click="blockerFilter = 'completed'" :class="blockerFilter === 'completed' ? 'bg-slate-800 text-white' : 'text-slate-400'" class="px-3 py-1 rounded-lg border border-slate-800">Completed</button>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/60 rounded-xl border border-slate-800 divide-y divide-slate-800/60">
+        <template x-for="item in filteredBlockers" :key="item.id">
+          <div class="p-3.5 flex items-center justify-between gap-4 hover:bg-slate-800/20 transition">
+            <div class="flex items-start gap-3">
+              <input 
+                type="checkbox" 
+                :checked="item.is_completed" 
+                @change="toggleActionItem(item)"
+                class="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              >
+              <div class="space-y-0.5">
+                <p class="text-xs font-medium" :class="item.is_completed ? 'line-through text-slate-500' : 'text-slate-100'" x-text="item.title"></p>
+                <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                  <span class="font-semibold text-slate-300" x-text="item.name_with_owner"></span>
+                  <span>&bull;</span>
+                  <span class="px-1.5 py-0.2 rounded text-[10px] bg-slate-800 text-slate-400 uppercase" x-text="item.source_type.replace('_', ' ')"></span>
+                  <template x-if="item.file_path">
+                    <span class="font-mono text-slate-500" x-text="item.file_path"></span>
+                  </template>
+                </div>
+              </div>
+            </div>
+            <button @click="dismissActionItem(item)" class="text-xs text-slate-500 hover:text-rose-400 px-2 py-1 rounded transition">Dismiss</button>
+          </div>
+        </template>
+        <div x-show="filteredBlockers.length === 0" class="p-8 text-center text-slate-500 text-xs">
+          No action items found matching criteria.
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 4: AI ENHANCEMENT STUDIO -->
+    <div x-show="currentView === 'studio'" class="space-y-6">
+      <div class="flex items-center justify-between bg-gradient-to-r from-indigo-950/60 to-purple-950/40 p-5 rounded-2xl border border-indigo-500/20">
+        <div class="space-y-1">
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            Gemini AI Studio Strategist
+            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium">Free Tier Optimized</span>
+          </h2>
+          <p class="text-xs text-slate-300 max-w-2xl">
+            Executes single-call cross-portfolio brainstorming across all repositories to identify shared modules, quick weekend finish lines (< 2.5 hrs), and copy-ready Antigravity prompts.
+          </p>
+        </div>
+        <button 
+          @click="runPortfolioBrainstorm()" 
+          :disabled="isBrainstorming"
+          class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-500/20 transition active:scale-95"
+        >
+          <span x-show="isBrainstorming" class="animate-spin">⏳</span>
+          <span x-text="isBrainstorming ? 'Analyzing Portfolio...' : 'Generate Portfolio Strategy'"></span>
+        </button>
+      </div>
+
+      <!-- Strategy Tabs: Synergies vs Weekend Finishers vs Next Stages -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Synergies Column -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+              <span class="text-indigo-400">🔗</span> Cross-Project Synergies
+            </h3>
+            <span class="text-xs font-mono text-slate-400" x-text="getEnhancementsByCategory('synergy').length"></span>
+          </div>
+          <div class="space-y-3">
+            <template x-for="enh in getEnhancementsByCategory('synergy')" :key="enh.id">
+              <div class="bg-slate-900/70 rounded-xl border border-slate-800 p-4 space-y-3">
+                <div class="space-y-1">
+                  <h4 class="text-xs font-bold text-white" x-text="enh.title"></h4>
+                  <p class="text-[11px] text-slate-300" x-text="enh.rationale"></p>
+                </div>
+                <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                  <span class="text-[10px] text-slate-500">Antigravity Ready</span>
+                  <button 
+                    @click="copyPrompt(enh.antigravity_prompt, enh.id)" 
+                    class="text-xs bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-lg transition flex items-center gap-1.5"
+                  >
+                    <span x-text="copiedId === enh.id ? 'Copied! ✓' : 'Copy Antigravity Prompt'"></span>
+                  </button>
+                </div>
+              </div>
+            </template>
+            <div x-show="getEnhancementsByCategory('synergy').length === 0" class="p-6 text-center text-slate-500 text-xs border border-dashed border-slate-800 rounded-xl">
+              Click 'Generate Portfolio Strategy' to surface cross-cutting shared libraries.
+            </div>
+          </div>
+        </div>
+
+        <!-- Weekend Finishers Column -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+              <span class="text-amber-400">⚡</span> Weekend Finishers (< 2.5 hrs)
+            </h3>
+            <span class="text-xs font-mono text-slate-400" x-text="getEnhancementsByCategory('quick_win').length"></span>
+          </div>
+          <div class="space-y-3">
+            <template x-for="enh in getEnhancementsByCategory('quick_win')" :key="enh.id">
+              <div class="bg-slate-900/70 rounded-xl border border-slate-800 p-4 space-y-3">
+                <div class="space-y-1">
+                  <div class="flex items-start justify-between gap-2">
+                    <h4 class="text-xs font-bold text-white" x-text="enh.title"></h4>
+                    <span x-show="enh.name_with_owner" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 shrink-0" x-text="enh.name_with_owner"></span>
+                  </div>
+                  <p class="text-[11px] text-slate-300" x-text="enh.rationale"></p>
+                </div>
+                <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                  <span class="text-[10px] text-amber-400 font-medium">High ROI Win</span>
+                  <button 
+                    @click="copyPrompt(enh.antigravity_prompt, enh.id)" 
+                    class="text-xs bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-lg transition flex items-center gap-1.5"
+                  >
+                    <span x-text="copiedId === enh.id ? 'Copied! ✓' : 'Copy Antigravity Prompt'"></span>
+                  </button>
+                </div>
+              </div>
+            </template>
+            <div x-show="getEnhancementsByCategory('quick_win').length === 0" class="p-6 text-center text-slate-500 text-xs border border-dashed border-slate-800 rounded-xl">
+              No weekend finishers generated yet. Run a portfolio strategy or project deep dive.
+            </div>
+          </div>
+        </div>
+
+        <!-- Next Milestones Column -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+              <span class="text-emerald-400">🚀</span> Next-Stage Milestones
+            </h3>
+            <span class="text-xs font-mono text-slate-400" x-text="getEnhancementsByCategory('next_stage').length"></span>
+          </div>
+          <div class="space-y-3">
+            <template x-for="enh in getEnhancementsByCategory('next_stage')" :key="enh.id">
+              <div class="bg-slate-900/70 rounded-xl border border-slate-800 p-4 space-y-3">
+                <div class="space-y-1">
+                  <div class="flex items-start justify-between gap-2">
+                    <h4 class="text-xs font-bold text-white" x-text="enh.title"></h4>
+                    <span x-show="enh.name_with_owner" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 shrink-0" x-text="enh.name_with_owner"></span>
+                  </div>
+                  <p class="text-[11px] text-slate-300" x-text="enh.rationale"></p>
+                </div>
+                <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                  <span class="text-[10px] text-emerald-400 font-medium">Milestone Blueprint</span>
+                  <button 
+                    @click="copyPrompt(enh.antigravity_prompt, enh.id)" 
+                    class="text-xs bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-lg transition flex items-center gap-1.5"
+                  >
+                    <span x-text="copiedId === enh.id ? 'Copied! ✓' : 'Copy Antigravity Prompt'"></span>
+                  </button>
+                </div>
+              </div>
+            </template>
+            <div x-show="getEnhancementsByCategory('next_stage').length === 0" class="p-6 text-center text-slate-500 text-xs border border-dashed border-slate-800 rounded-xl">
+              No milestone cards generated yet.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Slide-Over Inspection Drawer -->
+  <div x-show="inspectDrawerOpen" x-cloak class="fixed inset-0 z-50 overflow-hidden">
+    <div @click="inspectDrawerOpen = false" class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+      <div class="w-screen max-w-2xl bg-slate-900 border-l border-slate-800 flex flex-col shadow-2xl">
+        <!-- Drawer Header -->
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+          <div class="space-y-1">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <span x-text="activeRepo?.name"></span>
+              <a :href="activeRepo?.html_url" target="_blank" class="text-slate-500 hover:text-indigo-400 text-xs">↗</a>
+            </h3>
+            <p class="text-xs text-slate-400" x-text="activeRepo?.name_with_owner"></p>
+          </div>
+          <button @click="inspectDrawerOpen = false" class="text-slate-400 hover:text-white p-1 rounded-lg">&times;</button>
+        </div>
+
+        <!-- Drawer Tab Navigation -->
+        <div class="flex border-b border-slate-800 px-5 text-xs bg-slate-950/40">
+          <button @click="drawerTab = 'overview'" :class="drawerTab === 'overview' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-3 border-b-2 transition">Overview</button>
+          <button @click="drawerTab = 'checklists'" :class="drawerTab === 'checklists' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-3 border-b-2 transition flex items-center gap-1.5">
+            <span>Action Items</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-400" x-text="activeRepo?.action_items?.length || 0"></span>
+          </button>
+          <button @click="drawerTab = 'docs'" :class="drawerTab === 'docs' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-3 border-b-2 transition">Harvested Docs</button>
+          <button @click="drawerTab = 'ai'" :class="drawerTab === 'ai' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-3 border-b-2 transition text-indigo-300 font-medium">Gemini Deep Dive ✦</button>
+        </div>
+
+        <!-- Drawer Tab Contents -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+          <!-- TAB 1: OVERVIEW -->
+          <div x-show="drawerTab === 'overview'" class="space-y-5">
+            <!-- Stage & Domain Controls -->
+            <div class="grid grid-cols-2 gap-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80">
+              <div class="space-y-1">
+                <label class="text-[10px] uppercase font-bold text-slate-400">Lifecycle Stage</label>
+                <select @change="updateRepoStage(activeRepo, $event.target.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white">
+                  <template x-for="st in stages" :key="st">
+                    <option :value="st" :selected="st === activeRepo?.effective_stage" x-text="st"></option>
+                  </template>
+                </select>
+              </div>
+              <div class="space-y-1">
+                <label class="text-[10px] uppercase font-bold text-slate-400">Domain Category</label>
+                <select @change="updateRepoDomain(activeRepo, $event.target.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white">
+                  <template x-for="d in ['General', 'Family', 'Wealth', 'Hobbies', 'Hardware']" :key="d">
+                    <option :value="d" :selected="d === activeRepo?.domain_tag" x-text="d"></option>
+                  </template>
+                </select>
+              </div>
+            </div>
+
+            <!-- AI Overview & Blockers -->
+            <div class="space-y-3">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Technical Overview</h4>
+              <p class="text-xs text-slate-300 bg-slate-950/50 p-3.5 rounded-xl border border-slate-800 leading-relaxed" x-text="activeRepo?.summary_data?.ai_summary || activeRepo?.description || 'No technical summary generated yet.'"></p>
+            </div>
+
+            <!-- Blockers List -->
+            <div class="space-y-2">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400">Identified Architectural Blockers</h4>
+              <div class="space-y-1.5">
+                <template x-for="blk in activeRepo?.summary_data?.blockers || []" :key="blk">
+                  <div class="flex items-start gap-2 text-xs text-slate-300 bg-amber-950/20 border border-amber-500/20 p-2.5 rounded-lg">
+                    <span class="text-amber-400 font-bold">&bull;</span>
+                    <span x-text="blk"></span>
+                  </div>
+                </template>
+                <div x-show="!activeRepo?.summary_data?.blockers || activeRepo?.summary_data?.blockers?.length === 0" class="text-xs text-slate-500 italic">
+                  No blockers identified for this project.
+                </div>
+              </div>
+            </div>
+
+            <!-- Top Directories -->
+            <div class="space-y-2">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Directory Structure</h4>
+              <div class="flex flex-wrap gap-1.5">
+                <template x-for="dir in activeRepo?.summary_data?.directories || []" :key="dir">
+                  <span class="font-mono text-[11px] px-2.5 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700" x-text="dir + '/'"></span>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: CHECKLISTS -->
+          <div x-show="drawerTab === 'checklists'" class="space-y-3">
+            <template x-for="item in activeRepo?.action_items || []" :key="item.id">
+              <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex items-center justify-between gap-3">
+                <div class="flex items-start gap-3">
+                  <input 
+                    type="checkbox" 
+                    :checked="item.is_completed" 
+                    @change="toggleActionItem(item)"
+                    class="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  >
+                  <div>
+                    <p class="text-xs font-medium" :class="item.is_completed ? 'line-through text-slate-500' : 'text-slate-200'" x-text="item.title"></p>
+                    <span class="text-[10px] text-slate-500 font-mono" x-text="item.file_path || item.source_type"></span>
+                  </div>
+                </div>
+                <button @click="dismissActionItem(item)" class="text-[10px] text-slate-500 hover:text-rose-400">Dismiss</button>
+              </div>
+            </template>
+            <div x-show="!activeRepo?.action_items || activeRepo?.action_items?.length === 0" class="text-xs text-slate-500 italic text-center py-8">
+              No checklist items harvested from markdown documentation.
+            </div>
+          </div>
+
+          <!-- TAB 3: HARVESTED DOCS -->
+          <div x-show="drawerTab === 'docs'" class="space-y-4">
+            <template x-for="(content, file) in activeRepo?.summary_data?.sanitized_docs || {}" :key="file">
+              <div class="bg-slate-950/70 rounded-xl border border-slate-800 overflow-hidden">
+                <div class="bg-slate-800/80 px-4 py-2 border-b border-slate-700/60 flex items-center justify-between">
+                  <span class="font-mono text-xs font-semibold text-indigo-300" x-text="file"></span>
+                  <span class="text-[10px] text-slate-400 font-mono" x-text="`${content.length} chars (sanitized)`"></span>
+                </div>
+                <pre class="p-4 text-[11px] font-mono text-slate-300 whitespace-pre-wrap overflow-x-auto max-h-60" x-text="content"></pre>
+              </div>
+            </template>
+            <div x-show="!activeRepo?.summary_data?.sanitized_docs || Object.keys(activeRepo?.summary_data?.sanitized_docs).length === 0" class="text-xs text-slate-500 italic text-center py-8">
+              No markdown files harvested for this repository.
+            </div>
+          </div>
+
+          <!-- TAB 4: AI DEEP DIVE -->
+          <div x-show="drawerTab === 'ai'" class="space-y-5">
+            <div class="flex items-center justify-between bg-indigo-950/40 p-4 rounded-xl border border-indigo-500/20">
+              <div>
+                <h4 class="text-xs font-bold text-white">Generate Enhancement Plan</h4>
+                <p class="text-[11px] text-indigo-200">Creates Quick Wins (< 2 hrs) and Next Milestones with copy-ready Antigravity prompts.</p>
+              </div>
+              <button 
+                @click="runRepoDeepDive(activeRepo.id)" 
+                :disabled="isDeepDiving"
+                class="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition"
+              >
+                <span x-text="isDeepDiving ? 'Thinking...' : 'Analyze Now'"></span>
+              </button>
+            </div>
+
+            <!-- Existing Enhancements for this Repo -->
+            <div class="space-y-4">
+              <template x-for="enh in activeRepo?.enhancements || []" :key="enh.id">
+                <div class="bg-slate-950/80 rounded-xl border border-slate-800 p-4 space-y-3">
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded" :class="enh.category === 'quick_win' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'" x-text="enh.category === 'quick_win' ? 'Quick Win (< 2 hrs)' : 'Next Milestone'"></span>
+                      <h4 class="text-xs font-bold text-white mt-1.5" x-text="enh.title"></h4>
+                    </div>
+                  </div>
+                  <p class="text-[11px] text-slate-300" x-text="enh.rationale"></p>
+                  
+                  <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                    <span class="text-[10px] text-slate-500 font-mono">Antigravity Instruction Ready</span>
+                    <button 
+                      @click="copyPrompt(enh.antigravity_prompt, enh.id)" 
+                      class="text-xs bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-lg transition"
+                    >
+                      <span x-text="copiedId === enh.id ? 'Copied! ✓' : 'Copy Antigravity Prompt'"></span>
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function dashboardApp() {
+      return {
+        currentView: 'kanban',
+        activeDomain: 'All',
+        activeStageFilter: 'All',
+        searchQuery: '',
+        blockerFilter: 'all',
+        
+        stages: [
+          'Ideation & Planning',
+          'MVP In Progress',
+          'Debugging & Stabilization',
+          'Ready for Next Stage',
+          'Maintenance / Parked'
+        ],
+
+        repos: [],
+        enhancements: [],
+        blockers: [],
+        quota: { rpm: 0, rpm_limit: 15, rpd: 0, rpd_limit: 1500 },
+
+        isSyncing: false,
+        syncStatus: { active: false, message: '' },
+        
+        isBrainstorming: false,
+        isDeepDiving: false,
+        copiedId: null,
+
+        inspectDrawerOpen: false,
+        activeRepo: null,
+        drawerTab: 'overview',
+
+        async init() {
+          await this.loadProjects();
+          await this.loadQuota();
+          await this.loadEnhancements();
+          await this.loadBlockers();
+
+          // Refresh quota telemetry every 10 seconds
+          setInterval(() => this.loadQuota(), 10000);
+        },
+
+        async loadProjects() {
+          try {
+            const res = await fetch('/api/projects');
+            this.repos = await res.json();
+          } catch (e) {
+            console.error('Failed to load projects', e);
+          }
+        },
+
+        async loadQuota() {
+          try {
+            const res = await fetch('/api/quota');
+            this.quota = await res.json();
+          } catch (e) {
+            console.error('Failed to load quota', e);
+          }
+        },
+
+        async loadEnhancements() {
+          try {
+            const res = await fetch('/api/enhancements');
+            this.enhancements = await res.json();
+          } catch (e) {
+            console.error('Failed to load enhancements', e);
+          }
+        },
+
+        async loadBlockers() {
+          try {
+            const res = await fetch('/api/actions');
+            this.blockers = await res.json();
+          } catch (e) {
+            console.error('Failed to load blockers', e);
+          }
+        },
+
+        get filteredRepos() {
+          return this.repos.filter(r => {
+            if (this.activeDomain !== 'All' && r.domain_tag !== this.activeDomain) return false;
+            if (this.activeStageFilter !== 'All' && r.effective_stage !== this.activeStageFilter) return false;
+            if (this.searchQuery) {
+              const q = this.searchQuery.toLowerCase();
+              return r.name.toLowerCase().includes(q) || (r.description && r.description.toLowerCase().includes(q));
+            }
+            return true;
+          });
+        },
+
+        getReposForStage(stage) {
+          return this.filteredRepos.filter(r => r.effective_stage === stage);
+        },
+
+        get filteredBlockers() {
+          return this.blockers.filter(b => {
+            if (this.blockerFilter === 'pending') return !b.is_completed;
+            if (this.blockerFilter === 'completed') return b.is_completed;
+            return true;
+          });
+        },
+
+        get totalPendingBlockers() {
+          return this.blockers.filter(b => !b.is_completed).length;
+        },
+
+        getEnhancementsByCategory(category) {
+          return this.enhancements.filter(e => e.category === category);
+        },
+
+        stageColor(stage) {
+          switch (stage) {
+            case 'Ideation & Planning': return 'bg-cyan-400';
+            case 'MVP In Progress': return 'bg-indigo-400';
+            case 'Debugging & Stabilization': return 'bg-amber-400';
+            case 'Ready for Next Stage': return 'bg-emerald-400';
+            case 'Maintenance / Parked': return 'bg-slate-400';
+            default: return 'bg-slate-400';
+          }
+        },
+
+        stageBadgeClass(stage) {
+          switch (stage) {
+            case 'Ideation & Planning': return 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20';
+            case 'MVP In Progress': return 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20';
+            case 'Debugging & Stabilization': return 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
+            case 'Ready for Next Stage': return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+            case 'Maintenance / Parked': return 'bg-slate-500/10 text-slate-400 border border-slate-500/20';
+            default: return 'bg-slate-800 text-slate-300';
+          }
+        },
+
+        startSync() {
+          if (this.isSyncing) return;
+          this.isSyncing = true;
+          this.syncStatus.active = true;
+          this.syncStatus.message = 'Connecting to GitHub GraphQL API...';
+
+          const evtSource = new EventSource('/api/sync/stream');
+
+          evtSource.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              this.syncStatus.message = data.message || 'Synchronizing...';
+
+              if (data.event === 'sync_complete' || data.event === 'error') {
+                evtSource.close();
+                this.isSyncing = false;
+                this.loadProjects();
+                this.loadQuota();
+                this.loadBlockers();
+                setTimeout(() => {
+                  this.syncStatus.active = false;
+                }, 4000);
+              }
+            } catch (err) {
+              console.error('SSE parse error', err);
+            }
+          };
+
+          evtSource.onerror = (err) => {
+            console.error('SSE Error', err);
+            evtSource.close();
+            this.isSyncing = false;
+            this.syncStatus.message = 'Sync finished or interrupted.';
+            this.loadProjects();
+            setTimeout(() => { this.syncStatus.active = false; }, 3000);
+          };
+        },
+
+        async toggleRepoAI(repo) {
+          const newVal = !repo.ai_enabled;
+          repo.ai_enabled = newVal;
+          try {
+            await fetch(`/api/projects/${repo.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ai_enabled: newVal })
+            });
+          } catch (e) {
+            console.error('Failed to toggle AI mode', e);
+          }
+        },
+
+        async updateRepoStage(repo, stage) {
+          repo.effective_stage = stage;
+          repo.override_stage = stage;
+          try {
+            await fetch(`/api/projects/${repo.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ override_stage: stage })
+            });
+            await this.loadProjects();
+          } catch (e) {
+            console.error('Failed to update stage', e);
+          }
+        },
+
+        async updateRepoDomain(repo, domain) {
+          repo.domain_tag = domain;
+          try {
+            await fetch(`/api/projects/${repo.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ domain_tag: domain })
+            });
+          } catch (e) {
+            console.error('Failed to update domain', e);
+          }
+        },
+
+        async openInspect(repoId) {
+          try {
+            const res = await fetch(`/api/projects/${repoId}`);
+            this.activeRepo = await res.json();
+            this.drawerTab = 'overview';
+            this.inspectDrawerOpen = true;
+          } catch (e) {
+            console.error('Failed to inspect repo', e);
+          }
+        },
+
+        async toggleActionItem(item) {
+          const newCompleted = !item.is_completed;
+          item.is_completed = newCompleted;
+          try {
+            await fetch(`/api/actions/${item.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ is_completed: newCompleted })
+            });
+            await this.loadProjects();
+            await this.loadBlockers();
+          } catch (e) {
+            console.error('Failed to update action item', e);
+          }
+        },
+
+        async dismissActionItem(item) {
+          try {
+            await fetch(`/api/actions/${item.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ is_dismissed: true })
+            });
+            await this.loadBlockers();
+            if (this.activeRepo) {
+              this.activeRepo.action_items = this.activeRepo.action_items.filter(a => a.id !== item.id);
+            }
+          } catch (e) {
+            console.error('Failed to dismiss action item', e);
+          }
+        },
+
+        async runRepoDeepDive(repoId) {
+          if (this.isDeepDiving) return;
+          this.isDeepDiving = true;
+          try {
+            const res = await fetch(`/api/ideate/repo/${repoId}`, { method: 'POST' });
+            if (res.ok) {
+              await this.openInspect(repoId);
+              await this.loadEnhancements();
+              await this.loadQuota();
+              this.drawerTab = 'ai';
+            }
+          } catch (e) {
+            console.error('Deep dive failed', e);
+          } finally {
+            this.isDeepDiving = false;
+          }
+        },
+
+        async runPortfolioBrainstorm() {
+          if (this.isBrainstorming) return;
+          this.isBrainstorming = true;
+          try {
+            const res = await fetch('/api/ideate/portfolio', { method: 'POST' });
+            if (res.ok) {
+              await this.loadEnhancements();
+              await this.loadQuota();
+            }
+          } catch (e) {
+            console.error('Portfolio brainstorm failed', e);
+          } finally {
+            this.isBrainstorming = false;
+          }
+        },
+
+        async copyPrompt(promptText, id) {
+          try {
+            await navigator.clipboard.writeText(promptText);
+            this.copiedId = id;
+            setTimeout(() => { this.copiedId = null; }, 2500);
+          } catch (e) {
+            console.error('Failed to copy', e);
+          }
+        }
+      }
+    }
+  </script>
+</body>
+</html>
