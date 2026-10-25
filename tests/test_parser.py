@@ -79,3 +79,36 @@ def test_truncate_text():
     truncated = truncate_text(long_text)
     assert len(truncated) <= 10100
     assert "... [TRUNCATED 5000 CHARACTERS FOR EFFICIENCY] ..." in truncated
+
+
+def test_evaluate_project_status_heuristics():
+    """Verify status evaluation for mature projects without checklists."""
+    # 1. Mature repo with 0 checkboxes but full docs suite
+    docs = {
+        "README.md": "Overview",
+        "ARCHITECTURE.md": "Arch",
+        "HANDOVER.md": "Handover",
+        "REQUIREMENTS.md": "Reqs",
+        "SECURITY.md": "Sec",
+        "OPERATIONS.md": "Ops",
+        "TESTING.md": "Testing",
+    }
+    processed = {"completion_pct": 0.0, "total_checkboxes": 0, "sanitized_docs": docs}
+    metrics = {"code_files_count": 10, "has_tests": True, "has_ci": False}
+    pct, stage = evaluate_project_status(processed, metrics, commit_count=5, root_files=["run.sh", "requirements.txt"])
+    assert pct >= 80.0
+    assert stage == "Ready for Next Stage"
+
+    # 2. Early MVP project with spec
+    processed_early = {"completion_pct": 0.0, "total_checkboxes": 0, "sanitized_docs": {"project_plan.md": "Plan"}}
+    metrics_early = {"code_files_count": 2, "has_tests": False, "has_ci": False}
+    pct_early, stage_early = evaluate_project_status(processed_early, metrics_early, commit_count=2, root_files=[])
+    assert 25.0 <= pct_early <= 60.0
+    assert stage_early == "MVP In Progress"
+
+    # 3. Empty repo
+    processed_empty = {"completion_pct": 0.0, "total_checkboxes": 0, "sanitized_docs": {}}
+    pct_empty, stage_empty = evaluate_project_status(processed_empty, None, commit_count=0, root_files=[])
+    assert pct_empty == 0.0
+    assert stage_empty == "Ideation & Planning"
+

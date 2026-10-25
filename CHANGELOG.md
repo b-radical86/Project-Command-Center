@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [2.1.0] - 2026-10-25
 
 ### Added
+- **Holistic Completion Scoring for Projects Without Checklists**:
+  - Enhanced `evaluate_project_status` in `app/parser.py` to evaluate code metrics, entry points (`main.py`, `app.py`, `run.sh`, `requirements.txt`), and full enterprise documentation suites (`len(doc_keys) >= 6`).
+  - Added unit test `test_evaluate_project_status_heuristics` in `tests/test_parser.py`.
 - **Formal Pytest Automated Test Suite**:
   - Added `tests/test_parser.py` (secret scrubbing, markdown parsing, status heuristics).
   - Added `tests/test_db.py` (SQLite WAL mode initialization and quota telemetry).

@@ -146,7 +146,7 @@ def process_harvested_docs(docs: Dict[str, str]) -> Dict[str, Any]:
 
 def evaluate_project_status(
     processed_docs: Dict[str, Any],
-    metrics: Dict[str, Any],
+    metrics: Optional[Dict[str, Any]],
     commit_count: int,
     root_files: List[str]
 ) -> Tuple[float, str]:
@@ -154,6 +154,8 @@ def evaluate_project_status(
     Deterministically deduce project completion percentage and canonical lifecycle stage
     using holistic engineering telemetry (commits, code presence, test suites, docs).
     """
+    metrics = metrics or {}
+    root_files = root_files or []
     checkbox_pct = processed_docs.get("completion_pct", 0.0)
     total_checkboxes = processed_docs.get("total_checkboxes", 0)
     code_files = metrics.get("code_files_count", 0)
@@ -162,9 +164,13 @@ def evaluate_project_status(
     doc_keys = list(processed_docs.get("sanitized_docs", {}).keys())
 
     # Check for mature indicators
-    has_main_entry = any("main.py" in rf or "app.py" in rf for rf in root_files)
+    has_main_entry = any(
+        any(entry in rf.lower() for entry in ["main.py", "app.py", "index.html", "package.json", "requirements.txt", "run.sh"])
+        for rf in root_files
+    )
     has_spec = any("spec" in dk.lower() or "plan" in dk.lower() for dk in doc_keys)
     has_handover_or_roadmap = any("handover" in dk.lower() or "roadmap" in dk.lower() or "operations" in dk.lower() for dk in doc_keys)
+    has_full_docs = len(doc_keys) >= 6 and has_handover_or_roadmap
 
     # 1. Calculate realistic completion percentage
     if commit_count >= 40 and (has_main_entry or code_files >= 10):
@@ -173,7 +179,16 @@ def evaluate_project_status(
         if has_tests: base += 5.0
         if has_ci: base += 5.0
         if total_checkboxes >= 4 and checkbox_pct > 0:
-            final_pct = round((base * 0.7) + (checkbox_pct * 0.3), 1)
+            final_pct = round((base * 0.4) + (checkbox_pct * 0.6), 1)
+        else:
+            final_pct = base
+    elif has_full_docs:
+        # Fully documented enterprise architecture
+        base = 80.0
+        if has_tests or code_files >= 5: base += 5.0
+        if has_ci: base += 5.0
+        if total_checkboxes >= 4 and checkbox_pct > 0:
+            final_pct = round((base * 0.4) + (checkbox_pct * 0.6), 1)
         else:
             final_pct = base
     elif total_checkboxes >= 4:
@@ -181,31 +196,28 @@ def evaluate_project_status(
         final_pct = checkbox_pct
     else:
         # No formal checklists; derive from engineering progress signals
-        if commit_count >= 40 and (has_main_entry or code_files >= 10):
-            # Mature, fully operational pipeline
-            base = 85.0
-            if has_tests: base += 5.0
-            if has_ci: base += 5.0
-            final_pct = min(95.0, base)
-        elif commit_count >= 15 and code_files >= 5:
+        if commit_count >= 15 and (code_files >= 5 or has_main_entry):
             # Solid functioning application
             base = 70.0
             if has_tests: base += 10.0
             final_pct = min(90.0, base)
         elif commit_count >= 2 or (code_files >= 2 and has_spec):
             # Early active development (MVP in progress)
-            base = 25.0
+            base = 35.0
             if code_files >= 5: base += 15.0
             if has_tests: base += 10.0
             final_pct = min(60.0, base)
         else:
             # Initial scaffolding or planning
-            final_pct = 10.0 if (commit_count >= 1 or len(doc_keys) > 0) else 0.0
+            final_pct = 15.0 if (commit_count >= 1 or len(doc_keys) > 0) else 0.0
 
     # 2. Derive canonical lifecycle stage
-    if commit_count <= 1 and code_files <= 1 and not has_main_entry and not has_spec:
+    if commit_count <= 1 and code_files <= 1 and not has_main_entry and not has_spec and not has_full_docs:
         # Truly an early ideation / empty repo
         stage = "Ideation & Planning"
+    elif has_full_docs and (code_files >= 5 or commit_count >= 5 or len(doc_keys) >= 8):
+        # Enterprise documentation suite and working code
+        stage = "Ready for Next Stage"
     elif commit_count >= 30 and (has_main_entry or code_files >= 10) and has_handover_or_roadmap:
         # High maturity, ready for next stage
         stage = "Ready for Next Stage"
@@ -217,7 +229,7 @@ def evaluate_project_status(
     elif has_spec and commit_count >= 1:
         # Just starting development from specification
         stage = "MVP In Progress"
-    elif commit_count > 1 or code_files > 0:
+    elif commit_count > 1 or code_files > 0 or len(doc_keys) > 0:
         stage = "MVP In Progress"
     else:
         stage = "Ideation & Planning"
