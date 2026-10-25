@@ -5,6 +5,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.3.0] - 2026-10-25
+
+### Added
+- **Interactive Project Command Dashboard from Kanban Matrix**:
+  - Made every project card on the Kanban matrix directly clickable to instantly open a dedicated Project Command Dashboard.
+  - Added project-specific blocker badge to each Kanban card showing the exact count of active blockers (`summary_data.blockers`).
+  - Added child event stopping (`@click.stop`) on external repository links, stage selectors, and AI toggles to prevent modal collision.
+  - Expanded Slide-Over Dashboard (`max-w-3xl`) with ESC key listener (`@keydown.escape.window`).
+  - Implemented a dedicated **Project Blockers** dashboard module at the top of the project view specifically listing:
+    - Active architectural and dependency blockers with severity indicators.
+    - Blocker action items with direct interactive completion checkboxes.
+    - Clean positive state indicator when zero blockers are detected.
+  - Built a comprehensive Project Command view featuring:
+    - Quick metrics strip (Stage status, completion %, active blockers, tasks/issues count).
+    - Lifecycle stage override dropdown and domain category switcher.
+    - Dual-layer Plain-English project overview and Technical Architecture summary.
+    - Key Milestones & Objectives roadmap timeline (`key_milestones`).
+    - Codebase details: working tree local path with one-click copy, and key project directories.
+    - Quick tasks preview with direct checkbox completion and deep drill-down tabs.
+
+---
+
 ## [2.2.0] - 2026-10-25
 
 ### Added

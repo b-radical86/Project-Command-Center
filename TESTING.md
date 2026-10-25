@@ -92,8 +92,8 @@ curl -s -f http://127.0.0.1:8000/api/projects > /dev/null && echo "✅ GET /api/
 ## 3. Manual QA Verification Checklist
 
 Before pushing any major UI or backend refactor:
-- [ ] **Kanban Board**: Drag or select a new lifecycle stage for a project; verify the stage updates immediately on the card.
-- [ ] **Stage Persistence**: Refresh the page; verify that the manual stage override persists.
+- [ ] **Kanban Board & Project Dashboard**: Click on any project card in the Kanban matrix; verify the Project Command Dashboard opens smoothly, displays project-specific blockers, key milestones, metrics, and tasks.
+- [ ] **Stage Persistence**: Select a new stage inside the dashboard; refresh the page; verify that the manual stage override persists.
 - [ ] **AI Toggle**: Click `AI On`/`AI Off` on a card; verify the badge reflects the change and updates SQLite.
 - [ ] **Blockers View**: Switch to the **Blockers** tab; verify all pending blocker action items are visible with their source files.
 - [ ] **AI Deep Dive Drawer**: Click **AI Deep Dive ✦** in the drawer; click **Analyze Now**; verify Quick Wins and Next Milestones appear with a plain-English overview, expandable technical details, and a working **Copy Antigravity Prompt** button.

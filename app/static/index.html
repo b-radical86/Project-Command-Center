@@ -187,12 +187,16 @@
           <!-- Cards List -->
           <div class="space-y-3 flex-1 overflow-y-auto max-h-[calc(100vh-280px)] pr-1">
             <template x-for="repo in getReposForStage(stage)" :key="repo.id">
-              <div class="bg-slate-950/80 hover:bg-slate-900 rounded-lg border border-slate-800/90 p-3.5 space-y-3 transition shadow-sm hover:border-slate-700">
+              <div 
+                @click="openInspect(repo.id)"
+                class="bg-slate-950/80 hover:bg-slate-900 rounded-lg border border-slate-800/90 hover:border-indigo-500/60 p-3.5 space-y-3 transition-all duration-200 shadow-sm hover:shadow-lg hover:shadow-indigo-500/10 cursor-pointer group select-none relative"
+                title="Click to open project dashboard"
+              >
                 <!-- Repo Name & Links -->
                 <div class="flex items-start justify-between gap-2">
                   <div class="space-y-0.5">
                     <div class="flex items-center gap-1.5 flex-wrap">
-                      <a :href="repo.html_url" target="_blank" class="font-semibold text-xs text-slate-100 hover:text-indigo-400 transition flex items-center gap-1">
+                      <a :href="repo.html_url" target="_blank" @click.stop class="font-semibold text-xs text-slate-100 hover:text-indigo-400 transition flex items-center gap-1">
                         <span x-text="repo.name"></span>
                         <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
@@ -222,6 +226,13 @@
                 <!-- Metrics & Privacy Badges -->
                 <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-900">
                   <div class="flex items-center gap-2 text-slate-400">
+                    <!-- Blockers Count specifically for this repo -->
+                    <template x-if="repo.summary_data?.blockers?.length > 0">
+                      <span title="Active Blockers Specifically For This Project" class="flex items-center gap-1 text-[10px] font-semibold text-rose-400 bg-rose-500/15 border border-rose-500/30 px-1.5 py-0.5 rounded">
+                        <svg class="w-3 h-3 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <span x-text="repo.summary_data.blockers.length"></span>
+                      </span>
+                    </template>
                     <span title="Open Issues" class="flex items-center gap-1">
                       <svg class="w-3 h-3 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                       <span x-text="repo.open_issues_count">0</span>
@@ -234,7 +245,7 @@
 
                   <!-- AI Toggle -->
                   <button 
-                    @click="toggleRepoAI(repo)" 
+                    @click.stop="toggleRepoAI(repo)" 
                     class="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded transition"
                     :class="repo.ai_enabled ? 'bg-indigo-950/80 text-indigo-300 border border-indigo-800/60' : 'bg-slate-900 text-slate-500 border border-slate-800'"
                     :title="repo.ai_enabled ? 'AI Enabled: OpenRouter scans sanitized docs' : 'Deterministic Mode: Secrets/Client code protected from AI'"
@@ -247,20 +258,22 @@
                 <div class="flex items-center justify-between pt-1 gap-2">
                   <!-- Quick Stage Override Select -->
                   <select 
-                    @change="updateRepoStage(repo, $event.target.value)" 
-                    class="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[10px] text-slate-300 focus:outline-none focus:border-indigo-500"
+                    @click.stop 
+                    @change.stop="updateRepoStage(repo, $event.target.value)" 
+                    class="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[10px] text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
                   >
                     <template x-for="st in stages" :key="st">
                       <option :value="st" :selected="st === repo.effective_stage" x-text="st"></option>
                     </template>
                   </select>
 
-                  <!-- Inspect Drawer Trigger -->
+                  <!-- Dashboard Trigger Button -->
                   <button 
-                    @click="openInspect(repo.id)" 
-                    class="text-[10px] font-semibold text-indigo-400 hover:text-indigo-300 px-2 py-1 rounded bg-indigo-500/10 hover:bg-indigo-500/20 transition"
+                    @click.stop="openInspect(repo.id)" 
+                    class="text-[10px] font-semibold text-indigo-400 group-hover:text-indigo-300 px-2 py-1 rounded bg-indigo-500/10 group-hover:bg-indigo-500/20 transition flex items-center gap-1"
                   >
-                    Inspect &rarr;
+                    <span>Dashboard</span>
+                    <span>&rarr;</span>
                   </button>
                 </div>
               </div>
@@ -703,43 +716,149 @@
     </div>
   </main>
 
-  <!-- Slide-Over Inspection Drawer -->
-  <div x-show="inspectDrawerOpen" x-cloak class="fixed inset-0 z-50 overflow-hidden">
-    <div @click="inspectDrawerOpen = false" class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity"></div>
-    <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
-      <div class="w-screen max-w-2xl bg-slate-900 border-l border-slate-800 flex flex-col shadow-2xl">
-        <!-- Drawer Header -->
-        <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
-          <div class="space-y-1">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              <span x-text="activeRepo?.name"></span>
-              <a :href="activeRepo?.html_url" target="_blank" class="text-slate-500 hover:text-indigo-400 text-xs">↗</a>
-            </h3>
-            <p class="text-xs text-slate-400" x-text="activeRepo?.name_with_owner"></p>
+  <!-- Slide-Over Project Command Dashboard -->
+  <div x-show="inspectDrawerOpen" x-cloak class="fixed inset-0 z-50 overflow-hidden" @keydown.escape.window="inspectDrawerOpen = false">
+    <div @click="inspectDrawerOpen = false" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-y-0 right-0 max-w-full flex pl-6 sm:pl-10">
+      <div class="w-screen max-w-3xl bg-slate-900 border-l border-slate-800 flex flex-col shadow-2xl">
+        <!-- Dashboard Header -->
+        <div class="p-5 border-b border-slate-800 bg-slate-950/90 space-y-3">
+          <div class="flex items-start justify-between gap-4">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2.5 flex-wrap">
+                <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                  <span x-text="activeRepo?.name"></span>
+                </h3>
+                <a :href="activeRepo?.html_url" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-md border border-slate-700 transition flex items-center gap-1 font-medium">
+                  <span>GitHub</span>
+                  <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </a>
+                <template x-if="activeRepo?.is_local">
+                  <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span x-text="activeRepo?.active_branch ? `local:${activeRepo?.active_branch}` : 'local checkout'"></span>
+                  </span>
+                </template>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/30" x-text="activeRepo?.domain_tag"></span>
+              </div>
+              <p class="text-xs text-slate-400 font-mono" x-text="activeRepo?.name_with_owner"></p>
+            </div>
+            <button @click="inspectDrawerOpen = false" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition text-lg leading-none" title="Close Dashboard">&times;</button>
           </div>
-          <button @click="inspectDrawerOpen = false" class="text-slate-400 hover:text-white p-1 rounded-lg">&times;</button>
+
+          <!-- Quick Metrics Bar -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+            <!-- Stage Status -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2.5">
+              <span class="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Stage Status</span>
+              <div class="flex items-center gap-1.5 text-xs font-semibold text-slate-100">
+                <span class="w-2 h-2 rounded-full shrink-0" :class="stageColor(activeRepo?.effective_stage)"></span>
+                <span class="truncate" x-text="activeRepo?.effective_stage"></span>
+              </div>
+            </div>
+
+            <!-- Completion -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2.5">
+              <div class="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400 mb-0.5">
+                <span>Progress</span>
+                <span class="text-indigo-400 font-mono" x-text="`${activeRepo?.completion_pct}%`"></span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1">
+                <div class="bg-indigo-500 h-1.5 rounded-full" :style="`width: ${activeRepo?.completion_pct}%`"></div>
+              </div>
+            </div>
+
+            <!-- Blockers Specifically For This Repo -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2.5">
+              <span class="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Active Blockers</span>
+              <div class="flex items-center gap-1.5 text-xs font-bold" :class="(activeRepo?.summary_data?.blockers?.length || 0) > 0 ? 'text-rose-400' : 'text-emerald-400'">
+                <span x-text="(activeRepo?.summary_data?.blockers?.length || 0) > 0 ? `⚠️ ${activeRepo?.summary_data?.blockers?.length} Active` : '✅ None Identified'"></span>
+              </div>
+            </div>
+
+            <!-- Tasks & Issues -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2.5">
+              <span class="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Tasks & Issues</span>
+              <div class="text-xs font-mono text-slate-200">
+                <span x-text="`${activeRepo?.action_items?.length || 0} tasks`"></span> &bull; 
+                <span x-text="`${activeRepo?.open_issues_count || 0} issues`"></span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Drawer Tab Navigation -->
-        <div class="flex border-b border-slate-800 px-5 text-xs bg-slate-950/40">
-          <button @click="drawerTab = 'overview'" :class="drawerTab === 'overview' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-3 border-b-2 transition">Overview</button>
+        <div class="flex border-b border-slate-800 px-6 text-xs bg-slate-950/40">
+          <button @click="drawerTab = 'overview'" :class="drawerTab === 'overview' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-3 border-b-2 transition flex items-center gap-1.5">
+            <span>Project Dashboard</span>
+          </button>
           <button @click="drawerTab = 'checklists'" :class="drawerTab === 'checklists' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-3 border-b-2 transition flex items-center gap-1.5">
             <span>Action Items</span>
             <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-400" x-text="activeRepo?.action_items?.length || 0"></span>
           </button>
-          <button @click="drawerTab = 'docs'" :class="drawerTab === 'docs' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-3 border-b-2 transition">Harvested Docs</button>
-          <button @click="drawerTab = 'ai'" :class="drawerTab === 'ai' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-3 border-b-2 transition text-indigo-300 font-medium">AI Deep Dive ✦</button>
+          <button @click="drawerTab = 'docs'" :class="drawerTab === 'docs' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-3 border-b-2 transition flex items-center gap-1.5">
+            <span>Harvested Docs</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-400" x-text="Object.keys(activeRepo?.summary_data?.sanitized_docs || {}).length"></span>
+          </button>
+          <button @click="drawerTab = 'ai'" :class="drawerTab === 'ai' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-3 px-3 border-b-2 transition text-indigo-300 font-medium flex items-center gap-1.5">
+            <span>AI Deep Dive ✦</span>
+            <span x-show="activeRepo?.enhancements?.length" class="px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-500/20 text-indigo-300" x-text="activeRepo?.enhancements?.length"></span>
+          </button>
         </div>
 
         <!-- Drawer Tab Contents -->
         <div class="flex-1 overflow-y-auto p-6 space-y-6">
-          <!-- TAB 1: OVERVIEW -->
-          <div x-show="drawerTab === 'overview'" class="space-y-5">
-            <!-- Stage & Domain Controls -->
-            <div class="grid grid-cols-2 gap-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80">
+          <!-- TAB 1: PROJECT DASHBOARD OVERVIEW -->
+          <div x-show="drawerTab === 'overview'" class="space-y-6">
+            
+            <!-- 1. IDENTIFIED PROJECT BLOCKERS SECTION -->
+            <div class="bg-rose-950/20 border border-rose-500/30 rounded-xl p-4 space-y-3 shadow-sm">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-rose-300 flex items-center gap-2">
+                  <span>⚠️</span> Identified Blockers specifically for this project
+                </h4>
+                <span class="text-xs px-2.5 py-0.5 rounded-full font-mono font-bold" :class="(activeRepo?.summary_data?.blockers?.length || 0) > 0 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'" x-text="`${activeRepo?.summary_data?.blockers?.length || 0} Blockers`"></span>
+              </div>
+
+              <!-- Blockers List -->
+              <div class="space-y-2">
+                <template x-for="(blk, bIdx) in activeRepo?.summary_data?.blockers || []" :key="bIdx">
+                  <div class="flex items-start gap-2.5 p-3 rounded-lg bg-rose-950/40 border border-rose-900/60 text-xs text-rose-200 shadow-sm">
+                    <span class="text-rose-400 text-sm mt-0.5 font-bold">⛔</span>
+                    <div class="space-y-0.5 flex-1">
+                      <p class="font-medium leading-relaxed" x-text="blk"></p>
+                      <span class="text-[10px] text-rose-400/70 font-mono">Architectural / Dependency Risk Analysis</span>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- Blocker Action Items from Checklists -->
+                <template x-for="item in (activeRepo?.action_items || []).filter(a => a.source_type === 'ai_blocker' && !a.is_completed)" :key="item.id">
+                  <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-xs text-slate-200">
+                    <div class="flex items-center gap-2.5">
+                      <input type="checkbox" :checked="item.is_completed" @change="toggleActionItem(item)" class="h-4 w-4 rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                      <span class="text-xs text-slate-300 font-medium" x-text="item.title"></span>
+                    </div>
+                    <button @click="dismissActionItem(item)" class="text-[10px] text-slate-500 hover:text-rose-400">Dismiss</button>
+                  </div>
+                </template>
+
+                <!-- Zero Blockers State -->
+                <div x-show="!activeRepo?.summary_data?.blockers || activeRepo?.summary_data?.blockers?.length === 0" class="flex items-center gap-3 p-3.5 rounded-lg bg-emerald-950/20 border border-emerald-500/20 text-xs text-emerald-300">
+                  <span class="text-lg">✅</span>
+                  <div>
+                    <p class="font-semibold text-emerald-200">No Active Blockers Identified</p>
+                    <p class="text-[11px] text-emerald-400/80">This project has no active architectural blockers or unresolved dependency issues.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. STAGE & DOMAIN CONTROLS -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80">
               <div class="space-y-1">
-                <label class="text-[10px] uppercase font-bold text-slate-400">Lifecycle Stage</label>
-                <select @change="updateRepoStage(activeRepo, $event.target.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white">
+                <label class="text-[10px] uppercase font-bold text-slate-400">Lifecycle Stage Status</label>
+                <select @change="updateRepoStage(activeRepo, $event.target.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:border-indigo-500">
                   <template x-for="st in stages" :key="st">
                     <option :value="st" :selected="st === activeRepo?.effective_stage" x-text="st"></option>
                   </template>
@@ -747,7 +866,7 @@
               </div>
               <div class="space-y-1">
                 <label class="text-[10px] uppercase font-bold text-slate-400">Domain Category</label>
-                <select @change="updateRepoDomain(activeRepo, $event.target.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white">
+                <select @change="updateRepoDomain(activeRepo, $event.target.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:border-indigo-500">
                   <template x-for="d in ['General', 'Family', 'Wealth', 'Hobbies', 'Hardware']" :key="d">
                     <option :value="d" :selected="d === activeRepo?.domain_tag" x-text="d"></option>
                   </template>
@@ -755,37 +874,99 @@
               </div>
             </div>
 
-            <!-- AI Overview & Blockers -->
+            <!-- 3. PROJECT OVERVIEW: PLAIN-ENGLISH & TECHNICAL -->
             <div class="space-y-3">
-              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Technical Overview</h4>
-              <p class="text-xs text-slate-300 bg-slate-950/50 p-3.5 rounded-xl border border-slate-800 leading-relaxed" x-text="activeRepo?.summary_data?.ai_summary || activeRepo?.description || 'No technical summary generated yet.'"></p>
+              <!-- Plain-English Overview -->
+              <div class="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-4 space-y-1">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                  <span>💡</span> Plain-English Project Overview
+                </h4>
+                <p class="text-xs text-slate-200 leading-relaxed font-normal" x-text="activeRepo?.description || 'No non-technical overview recorded.'"></p>
+              </div>
+
+              <!-- Technical Architecture Overview -->
+              <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-1.5">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                  <span>🛠️</span> Technical Architecture & Status Overview
+                </h4>
+                <p class="text-xs text-slate-300 leading-relaxed font-mono text-[11px]" x-text="activeRepo?.summary_data?.ai_summary || 'No technical summary generated yet.'"></p>
+              </div>
             </div>
 
-            <!-- Blockers List -->
-            <div class="space-y-2">
-              <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400">Identified Architectural Blockers</h4>
+            <!-- 4. KEY MILESTONES & OBJECTIVES -->
+            <div x-show="activeRepo?.summary_data?.key_milestones?.length" class="space-y-2">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                <span>🎯</span> Key Project Milestones & Objectives
+              </h4>
               <div class="space-y-1.5">
-                <template x-for="blk in activeRepo?.summary_data?.blockers || []" :key="blk">
-                  <div class="flex items-start gap-2 text-xs text-slate-300 bg-amber-950/20 border border-amber-500/20 p-2.5 rounded-lg">
-                    <span class="text-amber-400 font-bold">&bull;</span>
-                    <span x-text="blk"></span>
+                <template x-for="(ms, idx) in activeRepo?.summary_data?.key_milestones || []" :key="idx">
+                  <div class="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-950/50 border border-slate-800/80 text-xs text-slate-200">
+                    <span class="text-indigo-400 font-mono font-bold text-[11px] shrink-0" x-text="`#${idx + 1}`"></span>
+                    <span class="text-xs text-slate-300 leading-relaxed" x-text="ms"></span>
                   </div>
                 </template>
-                <div x-show="!activeRepo?.summary_data?.blockers || activeRepo?.summary_data?.blockers?.length === 0" class="text-xs text-slate-500 italic">
-                  No blockers identified for this project.
+              </div>
+            </div>
+
+            <!-- 5. CODEBASE & DIRECTORIES -->
+            <div class="space-y-3 bg-slate-950/60 border border-slate-800 rounded-xl p-4">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                <span>📁</span> Codebase & Working Tree
+              </h4>
+              
+              <!-- Local Path if Local -->
+              <template x-if="activeRepo?.local_path">
+                <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs">
+                  <div class="space-y-0.5 truncate pr-2">
+                    <span class="text-[10px] text-slate-500 uppercase font-mono block">Local Working Tree Path</span>
+                    <span class="font-mono text-slate-300 truncate block text-[11px]" x-text="activeRepo?.local_path"></span>
+                  </div>
+                  <button @click="copyPrompt(activeRepo.local_path, 'local_path')" class="text-[10px] text-indigo-400 hover:text-indigo-300 px-2 py-1 rounded bg-indigo-500/10 shrink-0 font-medium">
+                    <span x-text="copiedId === 'local_path' ? 'Copied! ✓' : 'Copy Path'"></span>
+                  </button>
+                </div>
+              </template>
+
+              <!-- Top Directories -->
+              <div class="space-y-1.5">
+                <span class="text-[10px] text-slate-400 uppercase font-bold">Key Project Directories</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <template x-for="dir in activeRepo?.summary_data?.directories || []" :key="dir">
+                    <span class="font-mono text-[11px] px-2.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-700/80" x-text="dir + '/'"></span>
+                  </template>
+                  <div x-show="!activeRepo?.summary_data?.directories || activeRepo?.summary_data?.directories?.length === 0" class="text-xs text-slate-500 italic">
+                    Root-level structure only.
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Top Directories -->
+            <!-- 6. ACTION ITEMS QUICK PREVIEW -->
             <div class="space-y-2">
-              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Directory Structure</h4>
-              <div class="flex flex-wrap gap-1.5">
-                <template x-for="dir in activeRepo?.summary_data?.directories || []" :key="dir">
-                  <span class="font-mono text-[11px] px-2.5 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700" x-text="dir + '/'"></span>
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                  <span>📋</span> Tasks & Action Items Preview
+                </h4>
+                <button @click="drawerTab = 'checklists'" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">
+                  View all (<span x-text="activeRepo?.action_items?.length || 0"></span>) &rarr;
+                </button>
+              </div>
+              <div class="space-y-1.5">
+                <template x-for="item in (activeRepo?.action_items || []).slice(0, 4)" :key="item.id">
+                  <div class="p-2.5 bg-slate-950/60 rounded-lg border border-slate-800 flex items-center justify-between gap-2 text-xs">
+                    <div class="flex items-center gap-2.5">
+                      <input type="checkbox" :checked="item.is_completed" @change="toggleActionItem(item)" class="h-4 w-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                      <span :class="item.is_completed ? 'line-through text-slate-500' : 'text-slate-200'" x-text="item.title"></span>
+                    </div>
+                    <span class="text-[10px] text-slate-500 font-mono truncate max-w-[120px]" x-text="item.file_path || item.source_type"></span>
+                  </div>
                 </template>
+                <div x-show="!activeRepo?.action_items || activeRepo?.action_items?.length === 0" class="text-xs text-slate-500 italic p-3 text-center border border-dashed border-slate-800 rounded-lg">
+                  No checklist action items recorded for this project.
+                </div>
               </div>
             </div>
+
           </div>
 
           <!-- TAB 2: CHECKLISTS -->

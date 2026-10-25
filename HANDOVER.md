@@ -12,7 +12,21 @@
 
 ## 2. Recent Accomplishments (Current Iteration)
 
-1. **Non-Technical Project Descriptions in AI Studio Strategist**:
+1. **Interactive Project Command Dashboard from Kanban Matrix**:
+   - Enabled direct clickability across the entire Kanban project card to open a project-specific command dashboard.
+   - Added active blocker badge directly to each Kanban card showing count of blockers for that project.
+   - Guarded child controls (`@click.stop`) for external repository links, AI toggles, and stage dropdowns.
+   - Built a comprehensive Project Command Dashboard (`max-w-3xl`) featuring:
+     - Prominent **Identified Project Blockers** module at the top specifically listing architectural/dependency blockers and actionable checklist blockers with immediate interactive checkbox toggles.
+     - Quick metrics strip (Lifecycle stage, completion %, blockers count, tasks/issues).
+     - Live stage override and domain category switchers.
+     - Dual-layer Plain-English project overview alongside technical architecture summaries.
+     - Key project milestones & objectives roadmap timeline.
+     - Codebase working tree path with one-click copy and key directory structure.
+     - Top action items preview with direct checkbox completion.
+   - Added ESC key listener for instant keyboard dismissal.
+
+2. **Non-Technical Project Descriptions in AI Studio Strategist**:
    - Added `description` column to SQLite `ai_enhancements` table with automated backward-compatible migration.
    - Migrated all existing enhancements in `projects.db` to include clear, plain-English summaries explaining the user value in everyday terms.
    - Updated Pydantic schemas (`QuickWinItem`, `MilestoneItem`, `SynergyItem`, `WeekendFinisherItem`, `RoadmapItem`) with non-technical description fields.
